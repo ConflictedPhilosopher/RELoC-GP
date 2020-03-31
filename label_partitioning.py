@@ -7,20 +7,8 @@
 
 # class:
 # init
-# label counts (predicted, true)
-# hamming loss
-# extended hamming loss
-# precision
-# recall
-# accuracy
-# f measure
-# one-error
-# rank loss
-# class-based performance
-# micro-averaged
-# macro-averaged
-# multi-label performance
-# report performance
-
-# union
-# intersection
+# select candidate classifiers
+# partition label sets
+# insert partitioned label sets
+# similarity calculation
+# spectral graph clustering

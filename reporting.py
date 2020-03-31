@@ -4,3 +4,10 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+
+# class:
+# init
+# report population stats
+# report population
+# report tracked performance
+# report performance

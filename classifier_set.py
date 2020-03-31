@@ -4,3 +4,18 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+
+# class:
+# init
+
+# make population
+# make match set (distributed)
+# make correct set
+# make evaluation match set
+# deletion methods
+# run genetic algorithm
+# subsumption methods
+# update sets
+# evaluation methods
+# other methods
+#

@@ -6,8 +6,8 @@
 # ------------------------------------------------------------------------------
 
 # class:
-# init
-
-# classifier covering
-# classifier copy
-# classifier reboot
+# match
+# subsumption
+# deletion
+# parameter update
+# print

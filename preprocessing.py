@@ -4,3 +4,15 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+
+
+# class:
+# init
+# load data (.csv)
+# feature selection
+# characterize classes
+# characterize features
+# ِ multi-label properties
+# train-test split
+# cross-validation split
+# format data

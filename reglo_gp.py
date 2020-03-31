@@ -4,3 +4,9 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+
+# class:
+# init
+# run reglo_gp
+# single iteration
+# population evaluation

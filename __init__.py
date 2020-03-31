@@ -4,3 +4,9 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+
+# parallel run
+
+# average performance
+
+# main

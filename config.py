@@ -4,3 +4,8 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+
+# paths
+# file headers
+# training parameters (primary, secondary)
+# evaluation parameters

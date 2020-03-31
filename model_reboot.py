@@ -4,3 +4,11 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+
+# import classifier.py
+# import classifier_set.py
+
+# class:
+# init
+# reboot classifier
+# reboot population

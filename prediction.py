@@ -4,3 +4,11 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+
+# class:
+# init
+# calculate max prediction
+# calculate combined prediction
+# one-threshold
+# r-cut
+# p-cut
