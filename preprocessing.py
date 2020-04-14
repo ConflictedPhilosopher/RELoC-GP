@@ -26,7 +26,8 @@ class Preprocessing():
         self.class_pi = []
         self.imbalance_mean = 0.0
         self.cvir = 0.0
-        self.attributeInfo = []
+        self.attribute_info = []
+        self.dtypes = []
         self.data_train = pd.DataFrame()
         self.data_test = pd.DataFrame()
         self.data_train_list = []
@@ -68,9 +69,9 @@ class Preprocessing():
         self.dtypes = self.data_complete.iloc[:, :NO_FEATURES].dtypes
         for (it, type) in enumerate(self.dtypes):
             if type == "int64":
-                self.attributeInfo.append(0)
+                self.attribute_info.append(0)
             elif type == "float64":
-                self.attributeInfo.append([self.data_complete.iloc[:, it].min(),
+                self.attribute_info.append([self.data_complete.iloc[:, it].min(),
                                            self.data_complete.iloc[:, it].max()])
 
 # characterize classes
