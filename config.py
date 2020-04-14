@@ -9,3 +9,12 @@
 # file headers
 # training parameters (primary, secondary)
 # evaluation parameters
+
+SEED_NUMBER = 100
+
+DATA_DIR = "D:\Datasets"
+DATA_HEADER = "emotions"
+NO_FEATURES = 72
+
+
+
