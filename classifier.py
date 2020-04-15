@@ -24,8 +24,8 @@ class Classifier:
         self.loss = 0.0
         self.fitness = 0.0  # TODO set to constant initial fitness
         self.ave_matchset_size = 0
-        self.init_time_stamp = 0
-        self.ga_time_stamp = 0
+        self.init_time = 0
+        self.ga_time = 0
         self.deletion_vote = 0.0
 
         if isinstance(c, list):
@@ -38,8 +38,8 @@ class Classifier:
             print("Classifier: Error building classifier.")
 
     def classifier_cover(self, set_size, it, state, target):
-        self.ga_time_stamp = it
-        self.init_time_stamp = it
+        self.ga_time = it
+        self.init_time = it
         self.ave_matchset_size = set_size
         self.prediction = target
         method = ClassifierMethods()
@@ -55,8 +55,8 @@ class Classifier:
         self.prediction = deepcopy(classifier_old.prediction)
         self.parent_prediction = deepcopy(classifier_old.parent_prediction)
         self.ave_matchset_size = classifier_old.ave_matchset_size
-        self.init_time_stamp = it
-        self.ga_time_stamp = it
+        self.init_time = it
+        self.ga_time = it
         self.fitness = classifier_old.fitness
         self.loss = classifier_old.loss
         self.correct_count = classifier_old.correct_count
@@ -86,9 +86,9 @@ class Classifier:
         i = + 1
         self.ave_matchset_size = float(classifier_info[NO_FEATURES + i])
         i += 1
-        self.init_time_stamp = int(classifier_info[NO_FEATURES + i])
+        self.init_time = int(classifier_info[NO_FEATURES + i])
         i += 1
-        self.ga_time_stamp = int(classifier_info[NO_FEATURES + i])
+        self.ga_time = int(classifier_info[NO_FEATURES + i])
 
     def classifier_print(self):
         pre = Preprocessing()
@@ -112,11 +112,35 @@ class Classifier:
                            str("%d" % self.numerosity) + "\t" + \
                            str("%d" % self.match_count) + "\t" + \
                            str("%.4f" % self.ave_matchset_size) + "\t" + \
-                           str("%d" % self.init_time_stamp) + "\t" + \
-                           str("%d" % self.ga_time_stamp) + "\t"
+                           str("%d" % self.init_time) + "\t" + \
+                           str("%d" % self.ga_time) + "\t"
         classifier_string += parameter_string
         return classifier_string
 
+    def update_experience(self):
+        self.match_count += 1
+
+    def update_matchset_size(self, m_size):
+        beta = 0.1   #TODO replace from constants
+        if self.match_count < 1.0 / beta:
+            self.ave_matchset_size += (m_size - self.ave_matchset_size) / float(self.match_count)
+        else:
+            self.ave_matchset_size += beta * (m_size - self.ave_matchset_size)
+
+    def update_numerosity(self):
+        self.numerosity += 1
+
+    def update_correct(self):
+        self.correct_count += 1
+
+    def update_loss(self, target):
+        self.loss += (self.prediction.symmetric_difference(target))
+
+    def update_ga_time(self, time):
+        self.ga_time = time
+
+    def set_fitness(self, fitness):
+        self.fitness = fitness
 
 if __name__ == "__main__":
     classifier = Classifier(1, 0, [0.5, 0.5], {1, 2})
