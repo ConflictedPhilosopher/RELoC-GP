@@ -22,7 +22,7 @@ class Classifier:
         self.match_count = 0
         self.correct_count = 0
         self.loss = 0.0
-        self.fitness = 0.0  # TODO set to constant initial fitness
+        self.fitness = INIT_FITNESS
         self.ave_matchset_size = 0
         self.init_time = 0
         self.ga_time = 0
@@ -104,7 +104,7 @@ class Classifier:
             else:
                 classifier_string += "#"
             classifier_string += "\t"
-        prediction_string = ";".join([str(l) for l in self.prediction])
+        prediction_string = ";".join([str(label) for label in self.prediction])
         classifier_string += (prediction_string + "\t")
         parameter_string = str("%.4f" % self.fitness) + "\t" + \
                            str("%.4f" % self.loss) + "\t" + \
@@ -121,14 +121,13 @@ class Classifier:
         self.match_count += 1
 
     def update_matchset_size(self, m_size):
-        beta = 0.1   #TODO replace from constants
-        if self.match_count < 1.0 / beta:
+        if self.match_count < 1.0 / BETA:
             self.ave_matchset_size += (m_size - self.ave_matchset_size) / float(self.match_count)
         else:
-            self.ave_matchset_size += beta * (m_size - self.ave_matchset_size)
+            self.ave_matchset_size += BETA * (m_size - self.ave_matchset_size)
 
-    def update_numerosity(self):
-        self.numerosity += 1
+    def update_numerosity(self, num):
+        self.numerosity += num
 
     def update_correct(self):
         self.correct_count += 1
@@ -139,8 +138,18 @@ class Classifier:
     def update_ga_time(self, time):
         self.ga_time = time
 
+    def update_fitness(self):
+        self.fitness = max(pow(self.loss / float(self.match_count), NU), INIT_FITNESS)
+
     def set_fitness(self, fitness):
         self.fitness = fitness
+
+    def update_params(self, m_size, target):
+        self.update_experience()
+        self.update_matchset_size(m_size)
+        self.update_loss(target)
+        self.update_fitness()
+
 
 if __name__ == "__main__":
     classifier = Classifier(1, 0, [0.5, 0.5], {1, 2})
