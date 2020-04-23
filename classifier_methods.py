@@ -7,6 +7,7 @@
 from random import randint
 from preprocessing import Preprocessing
 from classifier import Classifier
+from config import *
 
 
 class ClassifierMethods:
@@ -41,17 +42,17 @@ class ClassifierMethods:
                     return False
         return True
 
-    def deletion(self, classifier, mean_fitness):
+    def get_deletion_vote(self, classifier, ave_fitness):
         delta = 0.5   #TODO replace from constants
         theta_del = 0.5   #TODO replace from constants
         init_fitness = 0.01  #TODO replace from constants
-        if classifier.fitness >= mean_fitness * delta or classifier.match_count < theta_del:
+        if classifier.fitness >= ave_fitness * delta or classifier.match_count < theta_del:
             classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity
         elif classifier.fitness == init_fitness:
-            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity * mean_fitness / \
+            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity * ave_fitness / \
                                        (init_fitness / classifier.numerosity)
         else:
-            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity * mean_fitness / \
+            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity * ave_fitness / \
                                        (classifier.fitness / classifier.numerosity)
 
     def is_equal(self, classifier1, classifier2):
@@ -73,9 +74,7 @@ class ClassifierMethods:
         return False
 
     def is_subsumer(self, classifier1):
-        theta_sub = 10
-        loss_sub = 0.1
-        if classifier1.match_count > theta_sub and classifier1.loss < loss_sub: #TODO replace the value from constants
+        if classifier1.match_count > THETA_SUB and classifier1.loss < LOSS_SUB:
             return True
         return False
 
@@ -93,9 +92,10 @@ class ClassifierMethods:
 
         return True
 
+
 if __name__ == "__main__":
-    classifier1 = Classifier(1, 0, [0.5, 0.5], {1, 2})
-    classifier2 = Classifier(1, 0, [0.25, 0.25], {1, 2, 3})
+    classifier10 = Classifier(1, 0, [0.5, 0.5], {1, 2})
+    classifier20 = Classifier(1, 0, [0.25, 0.25], {1, 2, 3})
     cl_method = ClassifierMethods()
-    cl_method.is_subsumer(classifier1)
-    cl_method.subsumption(classifier1, classifier2)
+    cl_method.is_subsumer(classifier10)
+    cl_method.subsumption(classifier10, classifier20)
