@@ -8,8 +8,8 @@
 from random import random
 from copy import deepcopy
 from classifier_methods import ClassifierMethods
-from preprocessing import Preprocessing
 from config import *
+import environment as env
 
 
 class Classifier:
@@ -18,9 +18,9 @@ class Classifier:
         self.condition = []
         self.prediction = {}
         self.parent_prediction = []
-        self.numerosity = 0
-        self.match_count = 0
-        self.correct_count = 0
+        self.numerosity = 1
+        self.match_count = 1
+        self.correct_count = 1
         self.loss = 0.0
         self.fitness = INIT_FITNESS
         self.ave_matchset_size = 0
@@ -62,10 +62,9 @@ class Classifier:
         self.correct_count = classifier_old.correct_count
 
     def classifier_reboot(self, classifier_info):
-        pre = Preprocessing()
         for ref in range(NO_FEATURES):
             if classifier_info[ref] != "#":
-                if pre.dtypes[ref] == "float64":
+                if env.preprocessing.dtypes[ref] == "float64":
                     self.specified_atts.append(ref)
                     self.condition.append(list(classifier_info[ref].split(";")))
                 else:
@@ -91,12 +90,11 @@ class Classifier:
         self.ga_time = int(classifier_info[NO_FEATURES + i])
 
     def classifier_print(self):
-        pre = Preprocessing()
         classifier_string = ""
         for ref in range(NO_FEATURES):
             if ref in self.specified_atts:
                 ind = self.specified_atts.index(ref)
-                if pre.dtypes[ref] == "float64":
+                if env.preprocessing.dtypes[ref] == "float64":
                     classifier_string += (str("%.4f" % self.condition[ind][0]) + ';'
                                           + str("%.4f" % self.condition[ind][1]))
                 else:
@@ -133,13 +131,13 @@ class Classifier:
         self.correct_count += 1
 
     def update_loss(self, target):
-        self.loss += (self.prediction.symmetric_difference(target))
+        self.loss += (self.prediction.symmetric_difference(target)/float(self.match_count))
 
     def update_ga_time(self, time):
         self.ga_time = time
 
     def update_fitness(self):
-        self.fitness = max(pow(self.loss / float(self.match_count), NU), INIT_FITNESS)
+        self.fitness = max(pow(1 - self.loss, NU), INIT_FITNESS)
 
     def set_fitness(self, fitness):
         self.fitness = fitness
