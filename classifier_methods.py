@@ -5,18 +5,16 @@
 #
 # ------------------------------------------------------------------------------
 from random import randint
-from preprocessing import Preprocessing
-from classifier import Classifier
 from config import *
+import environment as env
 
 
 class ClassifierMethods:
-    def __init__(self):
-        self.preprocessing = Preprocessing()
+    # def __init__(self):
 
     def build_match(self, ref, x):
-        att_info = self.preprocessing.attribute_info[ref]
-        dtype = self.preprocessing.dtypes[ref]
+        att_info = env.preprocessing.attribute_info[ref]
+        dtype = env.preprocessing.dtypes[ref]
         "continuous attribute"
         if dtype == "float64":
             att_range = att_info[1] - att_info[0]
@@ -30,7 +28,7 @@ class ClassifierMethods:
     def match(self, classifier, state):
         for ref in classifier.specified_atts:
             x = state[ref]
-            if self.preprocessing.dtypes[ref] == "float64":
+            if env.preprocessing.dtypes[ref] == "float64":
                 if classifier.condition[ref][0] < x < classifier.condition[ref][1]:
                     pass
                 else:
@@ -84,7 +82,7 @@ class ClassifierMethods:
         for ref in classifier1.specified_atts:
             if ref not in classifier2.specified_atts:
                 return False
-            if self.preprocessing.dtypes[ref] == "float64":
+            if env.preprocessing.dtypes[ref] == "float64":
                 if classifier1.condition[ref][0] < classifier2.condition[ref][0]:
                     return False
                 if classifier1.condition[ref][1] > classifier2.condition[ref][1]:
@@ -94,8 +92,8 @@ class ClassifierMethods:
 
 
 if __name__ == "__main__":
-    classifier10 = Classifier(1, 0, [0.5, 0.5], {1, 2})
-    classifier20 = Classifier(1, 0, [0.25, 0.25], {1, 2, 3})
+    classifier10 = 1 #Classifier(1, 0, [0.5, 0.5], {1, 2})
+    classifier20 = 2 #Classifier(1, 0, [0.25, 0.25], {1, 2, 3})
     cl_method = ClassifierMethods()
     cl_method.is_subsumer(classifier10)
     cl_method.subsumption(classifier10, classifier20)
