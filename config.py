@@ -14,22 +14,30 @@ SEED_NUMBER = 100
 
 DATA_DIR = "D:\Datasets"
 DATA_HEADER = "emotions"
+REPORT_PATH = "report"
 NO_FEATURES = 72
 
-MAX_ITERATION = 10000
+REBOOT_MODEL = False
+MAX_ITERATION = 1000
 MAX_CLASSIFIER = 100
 PROB_HASH = 0.5
 DO_SUBSUMPTION = False
 
+PREDICTION_METHOD = 'max'
+THRESHOLD = 'OT'
 THETA = 0.5
 RANK_CUT = 1
 
 # ------------------------------------------------------------------------------
 INIT_FITNESS = 0.01
-NU = 15
-THETA_SUB = 10
-LOSS_SUB = 0.1
+NU = 1
+THETA_SUB = 200
+LOSS_SUB = 0.01
 BETA = 0.1
+TRACK_FREQ = 5000
+ERROR = 1e-3
+DELTA = 0.1
+THETA_DEL = 20
 
 
 
