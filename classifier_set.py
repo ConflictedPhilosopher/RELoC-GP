@@ -8,34 +8,36 @@ from random import random, randint
 
 from classifier_methods import ClassifierMethods
 from classifier import Classifier
-from timer import Timer
 from config import *
 
 
 class ClassifierSets:
-    def __init__(self):
+    def __init__(self, attribute_info, dtypes, timer):
         self.popset = []
         self.matchset = []
         self.correctset = []
         self.micro_pop_size = 0
         self.ave_generality = 0.0
         self.ave_loss = 0.0
-        self.cl_methods = ClassifierMethods()
-        self.timer = Timer()
+        self.cl_methods = ClassifierMethods(dtypes, timer)
+        self.attribute_info = attribute_info
+        self.dtypes = dtypes
+        self.timer = timer
 
     def make_matchset(self, state, target, it):
         self.timer.start_matching()
         covering = True
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
                          self.cl_methods.match(classifier, state)]
+        self.timer.stop_matching()
         numerosity_sum = sum([self.popset[ind].numerosity for ind in self.matchset])
         for ind in self.matchset:
             if self.popset[ind].prediction == target:
                 covering = False
                 return
-        self.timer.stop_matching()
+
         if covering:
-            new_classifier = Classifier(numerosity_sum + 1, it, state, target)
+            new_classifier = Classifier(self.attribute_info, self.dtypes, numerosity_sum + 1, it, state, target)
             self.insert_classifier_pop(new_classifier, True)
             self.matchset.append(self.popset.__len__() - 1)
 
@@ -78,7 +80,7 @@ class ClassifierSets:
 
     def remove_from_matchset(self, ref):
         try:
-            self.matchset.pop(ref)
+            self.matchset.remove(ref)
             matchset_copy = [ind-1 for ind in self.matchset if ind > ref]
             self.matchset = matchset_copy
         except ValueError:
@@ -86,7 +88,7 @@ class ClassifierSets:
 
     def remove_from_correctset(self, ref):
         try:
-            self.correctset.pop(ref)
+            self.correctset.remove(ref)
             correctset_copy = [ind-1 for ind in self.correctset if ind > ref]
             self.correctset = correctset_copy
         except ValueError:
@@ -166,8 +168,8 @@ class ClassifierSets:
 # update sets
     def update_sets(self, target):
         m_size = sum([self.popset[ref].numerosity for ref in self.matchset])
-        null = [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
-        null = [self.popset[ref].update_correct for ref in self.correctset]
+        [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
+        [self.popset[ref].update_correct() for ref in self.correctset]
 
     def clear_sets(self):
         self.matchset = []
@@ -175,7 +177,7 @@ class ClassifierSets:
 
 # evaluation methods
     def pop_average_eval(self):
-        generality_sum = sum([(NO_FEATURES - classifier.specified_atts.__len__)/float(NO_FEATURES)
+        generality_sum = sum([(NO_FEATURES - classifier.specified_atts.__len__())/float(NO_FEATURES)
                               for classifier in self.popset])
         loss_sum = sum([classifier.loss for classifier in self.popset])
         try:
@@ -186,8 +188,7 @@ class ClassifierSets:
             self.ave_loss = None
 
 # other methods
-    def get_pop_tracking(self, it):
-        tracking = str(it) + "\t" + str(self.popset.__len__()) + "\t" + str(self.micro_pop_size) \
-                   + "\t" + str("%.4f" % self.ave_loss) + "\t" + str("%.4f" % self.ave_generality) \
-                   + "\t" + str("%.4f" % self.timer.get_global_timer())
+    def get_pop_tracking(self):
+        tracking = str(self.popset.__len__()) + "\t" + str(self.micro_pop_size) \
+                   + "\t" + str("%.4f" % self.ave_loss) + "\t" + str("%.4f" % self.ave_generality)
         return tracking
