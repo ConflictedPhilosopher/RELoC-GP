@@ -5,17 +5,14 @@
 #
 # ------------------------------------------------------------------------------
 import os.path
-import math
 from math import sqrt
-import time
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from config import *
 
-# class:
-class Preprocessing():
-# init
+
+class Preprocessing:
     def __init__(self,  data_train=None, data_test=None, data_complete=None):
         self.label_count = 0
         self.label_dict = {}
@@ -67,10 +64,10 @@ class Preprocessing():
 # characterize features
     def characterize_features(self):
         self.dtypes = self.data_complete.iloc[:, :NO_FEATURES].dtypes
-        for (it, type) in enumerate(self.dtypes):
-            if type == "int64":
+        for (it, dtype) in enumerate(self.dtypes):
+            if dtype == "int64":
                 self.attribute_info.append(0)
-            elif type == "float64":
+            elif dtype == "float64":
                 self.attribute_info.append([self.data_complete.iloc[:, it].min(),
                                            self.data_complete.iloc[:, it].max()])
 
@@ -84,7 +81,7 @@ class Preprocessing():
                 self.label_dict[str(label)] = 1
         self.distinct_lp = self.label_dict.__len__()
         self.imbalance_lp = max(self.label_dict.values()) \
-                                  / min(self.label_dict.values())
+            / min(self.label_dict.values())
 
 # ِ multi-label properties
     def multilabel_properties(self):
@@ -93,8 +90,8 @@ class Preprocessing():
         self.density = self.card/self.label_count
         class_dict = dict(zip(range(self.label_count), [0]*self.label_count))
         for label in self.data_complete['labelset']:
-            for l in label:
-                class_dict[l] += 1
+            for lbl in label:
+                class_dict[lbl] += 1
         self.class_pi = [val/self.data_complete_count for val in list(class_dict.values())]
         imbalance_label = [max(self.class_pi)/val for val in self.class_pi]
         self.imbalance_mean = sum(imbalance_label)/self.label_count
@@ -104,8 +101,8 @@ class Preprocessing():
 
 # train-test split
     def train_test_split(self):
-        self.data_train, self.data_test = train_test_split(self.data_complete, test_size=1-self.default_split,
-                                              random_state=SEED_NUMBER)
+        self.data_train, self.data_test = train_test_split(self.data_complete,
+                                                           test_size=1-self.default_split, random_state=SEED_NUMBER)
         self.data_train_count = len(self.data_train)
         self.data_test_count = len(self.data_test)
 
@@ -129,6 +126,7 @@ class Preprocessing():
         for idx, row in data.iterrows():
             data_list.append([list(row[:NO_FEATURES]), row[-1]])
         return data_list
+
 
 if __name__ == "__main__":
     data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + ".csv")
