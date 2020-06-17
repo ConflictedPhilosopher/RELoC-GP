@@ -94,7 +94,7 @@ class Timer:
         self.global_evaluation += diff
 
     def get_global_timer(self):
-        """ Set the global end timer, call at very end of algorithm. """
+        """ Set the global end timer, call at the very end of algorithm. """
         self.global_time = (time() - self.global_start_ref) + self.added_time
         return self.global_time / 60.0
 
