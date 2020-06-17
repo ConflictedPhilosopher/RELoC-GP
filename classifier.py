@@ -5,22 +5,21 @@
 #
 # ------------------------------------------------------------------------------
 
-from random import random
+import random
 from copy import deepcopy
-from classifier_methods import ClassifierMethods
+
 from config import *
-import environment as env
 
 
 class Classifier:
-    def __init__(self, a=None, b=None, c=None, d=None):
+    def __init__(self, attribute_info, dtypes, a=None, b=None, c=None, d=None):
         self.specified_atts = []
         self.condition = []
         self.prediction = {}
         self.parent_prediction = []
         self.numerosity = 1
-        self.match_count = 1
-        self.correct_count = 1
+        self.match_count = 0
+        self.correct_count = 0
         self.loss = 0.0
         self.fitness = INIT_FITNESS
         self.ave_matchset_size = 0
@@ -28,26 +27,38 @@ class Classifier:
         self.ga_time = 0
         self.deletion_vote = 0.0
 
+        random.seed(SEED_NUMBER)
+
         if isinstance(c, list):
-            self.classifier_cover(a, b, c, d)
+            self.classifier_cover(a, b, c, d, attribute_info, dtypes)
         elif isinstance(a, Classifier):
             self.classifier_copy(a, b)
         elif isinstance(a, list) and not b:
-            self.classifier_reboot(a)
+            self.classifier_reboot(a, dtypes)
         else:
             print("Classifier: Error building classifier.")
 
-    def classifier_cover(self, set_size, it, state, target):
+    def classifier_cover(self, set_size, it, state, target, attribute_info, dtypes):
         self.ga_time = it
         self.init_time = it
         self.ave_matchset_size = set_size
         self.prediction = target
-        method = ClassifierMethods()
 
         for ref, x in enumerate(state):
-            if random() < (1 - PROB_HASH):
+            if random.random() < (1 - PROB_HASH):
                 self.specified_atts.append(ref)
-                self.condition.append(method.build_match(ref, x))
+                self.condition.append(self.build_match(ref, x, attribute_info[ref], dtypes[ref]))
+
+    def build_match(self, ref, x, att_info, dtype):
+        "continuous attribute"
+        if dtype == "float64":
+            att_range = att_info[1] - att_info[0]
+            radius = random.randint(25, 75) * 0.01 * (att_range / 2.0)
+            return [x - radius, x + radius]
+        elif dtype == "int64":
+            return x
+        else:
+            print("attribute type unidentified!")
 
     def classifier_copy(self, classifier_old, it):
         self.specified_atts = deepcopy(classifier_old.specified_atts)
@@ -61,10 +72,10 @@ class Classifier:
         self.loss = classifier_old.loss
         self.correct_count = classifier_old.correct_count
 
-    def classifier_reboot(self, classifier_info):
+    def classifier_reboot(self, classifier_info, dtypes):
         for ref in range(NO_FEATURES):
             if classifier_info[ref] != "#":
-                if env.preprocessing.dtypes[ref] == "float64":
+                if dtypes[ref] == "float64":
                     self.specified_atts.append(ref)
                     self.condition.append(list(classifier_info[ref].split(";")))
                 else:
@@ -89,32 +100,6 @@ class Classifier:
         i += 1
         self.ga_time = int(classifier_info[NO_FEATURES + i])
 
-    def classifier_print(self):
-        classifier_string = ""
-        for ref in range(NO_FEATURES):
-            if ref in self.specified_atts:
-                ind = self.specified_atts.index(ref)
-                if env.preprocessing.dtypes[ref] == "float64":
-                    classifier_string += (str("%.4f" % self.condition[ind][0]) + ';'
-                                          + str("%.4f" % self.condition[ind][1]))
-                else:
-                    classifier_string += str(self.condition[ind])
-            else:
-                classifier_string += "#"
-            classifier_string += "\t"
-        prediction_string = ";".join([str(label) for label in self.prediction])
-        classifier_string += (prediction_string + "\t")
-        parameter_string = str("%.4f" % self.fitness) + "\t" + \
-                           str("%.4f" % self.loss) + "\t" + \
-                           str("%d" % self.correct_count) + "\t" + \
-                           str("%d" % self.numerosity) + "\t" + \
-                           str("%d" % self.match_count) + "\t" + \
-                           str("%.4f" % self.ave_matchset_size) + "\t" + \
-                           str("%d" % self.init_time) + "\t" + \
-                           str("%d" % self.ga_time) + "\t"
-        classifier_string += parameter_string
-        return classifier_string
-
     def update_experience(self):
         self.match_count += 1
 
@@ -131,7 +116,7 @@ class Classifier:
         self.correct_count += 1
 
     def update_loss(self, target):
-        self.loss += (self.prediction.symmetric_difference(target)/float(self.match_count))
+        self.loss += (self.prediction.symmetric_difference(target).__len__() / float(self.match_count))
 
     def update_ga_time(self, time):
         self.ga_time = time
@@ -150,5 +135,6 @@ class Classifier:
 
 
 if __name__ == "__main__":
-    classifier = Classifier(1, 0, [0.5, 0.5], {1, 2})
-    string = classifier.classifier_print()
+    # classifier = Classifier(1, 0, [0.5, 0.5], {1, 2})
+    # string = classifier.classifier_print()
+    print('nothing goes here!')
