@@ -6,8 +6,12 @@
 # ------------------------------------------------------------------------------
 
 import os.path
+import random
+
 from preprocessing import Preprocessing
 from config import *
+
+random.seed(SEED_NUMBER)
 
 data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + ".csv")
 train_data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_train.csv")
@@ -21,4 +25,3 @@ preprocessing.characterize_labels()
 preprocessing.multilabel_properties()
 preprocessing.data_train_list = preprocessing.format_data(preprocessing.data_train)
 preprocessing.data_test_list = preprocessing.format_data(preprocessing.data_test)
-
