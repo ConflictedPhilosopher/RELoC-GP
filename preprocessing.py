@@ -63,8 +63,13 @@ class Preprocessing:
 
 # characterize features
     def characterize_features(self):
-        self.dtypes = self.data_complete.iloc[:, :NO_FEATURES].dtypes
-        for (it, dtype) in enumerate(self.dtypes):
+        for dtype in self.data_complete.iloc[:, :NO_FEATURES].dtypes:
+            if dtype == "float64":
+                self.dtypes.append(1)
+            else:
+                self.dtypes.append(0)
+        dtypes = self.data_complete.iloc[:, :NO_FEATURES].dtypes
+        for (it, dtype) in enumerate(dtypes):
             if dtype == "int64":
                 self.attribute_info.append(0)
             elif dtype == "float64":
@@ -122,7 +127,7 @@ class Preprocessing:
 # format data
     def format_data(self, data):
         data_list = []
-        data.sample(frac=1.0, random_state=SEED_NUMBER)
+        # data.sample(frac=1.0, random_state=SEED_NUMBER)
         for idx, row in data.iterrows():
             data_list.append([list(row[:NO_FEATURES]), row[-1]])
         return data_list
