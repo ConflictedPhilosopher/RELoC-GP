@@ -4,6 +4,11 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+import os.path
+
+import environment as env
+from config import *
+from reglo_gp import REGLoGP
 
 # parallel run
 
@@ -11,6 +16,9 @@
 
 # main
 
-# self.data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + ".csv")
-# self.train_data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_train.csv")
-# self.test_data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_test.csv")
+
+
+os.makedirs(REPORT_PATH, exist_ok=True)
+model_0 = REGLoGP(0, env)
+model_0.train_model()
+
