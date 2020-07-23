@@ -27,8 +27,6 @@ class Classifier:
         self.ga_time = 0
         self.deletion_vote = 0.0
 
-        random.seed(SEED_NUMBER)
-
         if isinstance(c, list):
             self.classifier_cover(a, b, c, d, attribute_info, dtypes)
         elif isinstance(a, Classifier):
@@ -43,19 +41,17 @@ class Classifier:
         self.init_time = it
         self.ave_matchset_size = set_size
         self.prediction = target
-
         for ref, x in enumerate(state):
             if random.random() < (1 - PROB_HASH):
                 self.specified_atts.append(ref)
-                self.condition.append(self.build_match(ref, x, attribute_info[ref], dtypes[ref]))
+                self.condition.append(self.build_match(x, attribute_info[ref], dtypes[ref]))
 
-    def build_match(self, ref, x, att_info, dtype):
-        "continuous attribute"
-        if dtype == "float64":
+    def build_match(self, x, att_info, dtype):
+        if dtype:
             att_range = att_info[1] - att_info[0]
             radius = random.randint(25, 75) * 0.01 * (att_range / 2.0)
             return [x - radius, x + radius]
-        elif dtype == "int64":
+        elif not dtype:
             return x
         else:
             print("attribute type unidentified!")
