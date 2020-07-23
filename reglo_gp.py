@@ -9,7 +9,6 @@ import os.path
 from config import *
 from classifier_set import ClassifierSets
 from prediction import Prediction
-from reporting import Reporting
 from timer import Timer
 from performance import Performance
 
