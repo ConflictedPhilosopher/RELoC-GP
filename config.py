@@ -10,7 +10,7 @@
 # training parameters (primary, secondary)
 # evaluation parameters
 
-SEED_NUMBER = 100
+SEED_NUMBER = 161
 
 DATA_DIR = "D:\Datasets"
 DATA_HEADER = "emotions"
@@ -18,7 +18,7 @@ REPORT_PATH = "report"
 NO_FEATURES = 72
 
 REBOOT_MODEL = False
-MAX_ITERATION = 1000
+MAX_ITERATION = 10000
 MAX_CLASSIFIER = 100
 PROB_HASH = 0.5
 DO_SUBSUMPTION = False
