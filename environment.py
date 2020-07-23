@@ -18,8 +18,8 @@ train_data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_train.csv"
 test_data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_test.csv")
 fold_path = [os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_fold_" + str(i + 1) + ".csv") for i in range(5)]
 
-preprocessing = Preprocessing(data_path, None, None)
-preprocessing.train_test_split()
+preprocessing = Preprocessing(train_data_path, test_data_path, None)
+# preprocessing.train_test_split()
 preprocessing.characterize_features()
 preprocessing.characterize_labels()
 preprocessing.multilabel_properties()
