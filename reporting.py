@@ -5,8 +5,13 @@
 #
 # ------------------------------------------------------------------------------
 
-# class:
-# init
+
+class Reporting:
+    def __init__(self):
+        self.a = 1
+
+    def write_pop_stats(self):
+        print('write stuff in .txt')
 # report population stats
 # report population
 # report tracked performance
