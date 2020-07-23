@@ -4,7 +4,8 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
-from random import random, randint
+import random
+import timer
 
 from classifier_methods import ClassifierMethods
 from classifier import Classifier
@@ -25,10 +26,26 @@ class ClassifierSets:
         self.timer = timer
 
     def make_matchset(self, state, target, it):
+
+        def match(classifier, state0):
+            for idx, ref in enumerate(classifier.specified_atts):
+                x = state0[ref]
+                if self.dtypes[ref]:
+                    if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
+                        pass
+                    else:
+                        return False
+                else:
+                    if x == classifier.condition[idx]:
+                        pass
+                    else:
+                        return False
+            return True
+
         self.timer.start_matching()
         covering = True
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
-                         self.cl_methods.match(classifier, state)]
+                         match(classifier, state)]
         self.timer.stop_matching()
         numerosity_sum = sum([self.popset[ind].numerosity for ind in self.matchset])
         for ind in self.matchset:
@@ -42,8 +59,26 @@ class ClassifierSets:
             self.matchset.append(self.popset.__len__() - 1)
 
     def make_eval_matchset(self, state):
+
+        def match(classifier, state0):
+            self.timer.start_subsumption()
+            for idx, ref in enumerate(classifier.specified_atts):
+                x = state0[ref]
+                if self.dtypes[ref] == "float64":
+                    if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
+                        pass
+                    else:
+                        return False
+                else:
+                    if x == classifier.condition[idx]:
+                        pass
+                    else:
+                        return False
+            self.timer.stop_subsumption()
+            return True
+
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
-                         self.cl_methods.match(classifier, state)]
+                         match(classifier, state)]
 
     def make_correctset(self, target):
         self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
@@ -56,11 +91,12 @@ class ClassifierSets:
         self.timer.stop_deletion()
 
     def delete_from_sets(self):
+        random.seed(SEED_NUMBER)
         ave_fitness = sum([classifier.fitness for classifier in self.popset])\
                        / float(self.micro_pop_size)
         vote_list = [self.cl_methods.get_deletion_vote(cl, ave_fitness) for cl in self.popset]
         vote_sum = sum(vote_list)
-        choice_point = vote_sum * random()
+        choice_point = vote_sum * random.random()
 
         new_vote_sum = 0.0
         for idx in range(vote_list.__len__()):
@@ -143,7 +179,7 @@ class ClassifierSets:
         choices = [ref for ref in self.correctset if
                    self.cl_methods.subsumption(self.popset[ref], classifier)]
         if choices:
-            idx = randint(choices.__len__())
+            idx = random.randint(choices.__len__())
             self.popset[choices[idx]].update_numerosity(1)
             self.micro_pop_size += 1
             return
