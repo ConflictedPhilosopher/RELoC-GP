@@ -4,54 +4,43 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
-from random import randint
+
 from config import *
-import environment as env
 
 
 class ClassifierMethods:
-    # def __init__(self):
+    def __init__(self, dtypes, timer):
+        self.dtypes = dtypes
+        self.timer = timer
 
-    def build_match(self, ref, x):
-        att_info = env.preprocessing.attribute_info[ref]
-        dtype = env.preprocessing.dtypes[ref]
-        "continuous attribute"
-        if dtype == "float64":
-            att_range = att_info[1] - att_info[0]
-            radius = randint(25, 75) * 0.01 * (att_range / 2.0)
-            return [x - radius, x + radius]
-        elif dtype == "int64":
-            return x
-        else:
-            print("attribute type unidentified!")
-
+    # Will be removed
     def match(self, classifier, state):
-        for ref in classifier.specified_atts:
+        self.timer.start_subsumption()
+        for idx, ref in enumerate(classifier.specified_atts):
             x = state[ref]
-            if env.preprocessing.dtypes[ref] == "float64":
-                if classifier.condition[ref][0] < x < classifier.condition[ref][1]:
+            if self.dtypes[ref] == "float64":
+                if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
                     pass
                 else:
                     return False
             else:
-                if x == classifier.condition[ref]:
+                if x == classifier.condition[idx]:
                     pass
                 else:
                     return False
+        self.timer.stop_subsumption()
         return True
 
     def get_deletion_vote(self, classifier, ave_fitness):
-        delta = 0.5   #TODO replace from constants
-        theta_del = 0.5   #TODO replace from constants
-        init_fitness = 0.01  #TODO replace from constants
-        if classifier.fitness >= ave_fitness * delta or classifier.match_count < theta_del:
+        if classifier.fitness >= ave_fitness * DELTA or classifier.match_count < THETA_DEL:
             classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity
-        elif classifier.fitness == init_fitness:
+        elif classifier.fitness == INIT_FITNESS:
             classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity * ave_fitness / \
-                                       (init_fitness / classifier.numerosity)
+                                       (INIT_FITNESS / classifier.numerosity)
         else:
             classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity * ave_fitness / \
                                        (classifier.fitness / classifier.numerosity)
+        return classifier.deletion_vote
 
     def is_equal(self, classifier1, classifier2):
         if classifier1.prediction == classifier2.prediction and \
@@ -82,18 +71,38 @@ class ClassifierMethods:
         for ref in classifier1.specified_atts:
             if ref not in classifier2.specified_atts:
                 return False
-            if env.preprocessing.dtypes[ref] == "float64":
+            if self.dtypes[ref] == "float64":
                 if classifier1.condition[ref][0] < classifier2.condition[ref][0]:
                     return False
                 if classifier1.condition[ref][1] > classifier2.condition[ref][1]:
                     return False
-
         return True
 
+    def classifier_print(self, classifier):
+        classifier_string = ""
+        for ref in range(NO_FEATURES):
+            if ref in classifier.specified_atts:
+                ind = classifier.specified_atts.index(ref)
+                if self.dtypes[ref] == "float64":
+                    classifier_string += (str("%.4f" % classifier.condition[ind][0]) + ';'
+                                          + str("%.4f" % classifier.condition[ind][1]))
+                else:
+                    classifier_string += str(classifier.condition[ind])
+            else:
+                classifier_string += "#"
+            classifier_string += "\t"
+        prediction_string = ";".join([str(label) for label in classifier.prediction])
+        classifier_string += (prediction_string + "\t")
+        parameter_string = str("%.4f" % classifier.fitness) + "\t" + \
+            str("%.4f" % classifier.loss) + "\t" + \
+            str("%d" % classifier.correct_count) + "\t" + \
+            str("%d" % classifier.numerosity) + "\t" + \
+            str("%d" % classifier.match_count) + "\t" + \
+            str("%.4f" % classifier.ave_matchset_size) + "\t" + \
+            str("%d" % classifier.init_time) + "\t" + \
+            str("%d" % classifier.ga_time) + "\t"
+        classifier_string += parameter_string
+        return classifier_string
 
 if __name__ == "__main__":
-    classifier10 = 1 #Classifier(1, 0, [0.5, 0.5], {1, 2})
-    classifier20 = 2 #Classifier(1, 0, [0.25, 0.25], {1, 2, 3})
-    cl_method = ClassifierMethods()
-    cl_method.is_subsumer(classifier10)
-    cl_method.subsumption(classifier10, classifier20)
+    print('nothing goes here!')
