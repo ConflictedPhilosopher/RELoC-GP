@@ -11,6 +11,7 @@ from classifier_set import ClassifierSets
 from prediction import Prediction
 from timer import Timer
 from performance import Performance
+from reporting import Reporting
 
 
 class REGLoGP:
@@ -79,9 +80,14 @@ class REGLoGP:
 
         self.timer.start_evaluation()
         self.population.pop_average_eval()
-        [test_performance, test_coverage] = self.evaluation()
+        [test_evaluation, test_coverage] = self.evaluation()
         [train_evaluation, train_coverage] = self.evaluation(False)
         self.timer.stop_evaluation()
+
+        reporting = Reporting(self.exp)
+        reporting.write_model_stats(self.population.popset, self.timer, train_evaluation, train_coverage,
+                                    test_evaluation, test_coverage)
+        reporting.write_pop(self.population.popset, self.env.preprocessing.dtypes)
 
     def train_iteration(self, sample):
         self.population.make_matchset(sample[0], sample[1], self.iteration)
