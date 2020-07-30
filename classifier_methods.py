@@ -9,27 +9,25 @@ from config import *
 
 
 class ClassifierMethods:
-    def __init__(self, dtypes, timer):
+    def __init__(self, dtypes):
         self.dtypes = dtypes
-        self.timer = timer
-
-    # Will be removed
-    def match(self, classifier, state):
-        self.timer.start_subsumption()
-        for idx, ref in enumerate(classifier.specified_atts):
-            x = state[ref]
-            if self.dtypes[ref] == "float64":
-                if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
-                    pass
-                else:
-                    return False
-            else:
-                if x == classifier.condition[idx]:
-                    pass
-                else:
-                    return False
-        self.timer.stop_subsumption()
-        return True
+    # # Will be removed
+    # def match(self, classifier, state):
+    #     self.timer.start_subsumption()
+    #     for idx, ref in enumerate(classifier.specified_atts):
+    #         x = state[ref]
+    #         if self.dtypes[ref] == "float64":
+    #             if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
+    #                 pass
+    #             else:
+    #                 return False
+    #         else:
+    #             if x == classifier.condition[idx]:
+    #                 pass
+    #             else:
+    #                 return False
+    #     self.timer.stop_subsumption()
+    #     return True
 
     def get_deletion_vote(self, classifier, ave_fitness):
         if classifier.fitness >= ave_fitness * DELTA or classifier.match_count < THETA_DEL:
@@ -90,17 +88,17 @@ class ClassifierMethods:
                     classifier_string += str(classifier.condition[ind])
             else:
                 classifier_string += "#"
-            classifier_string += "\t"
+            classifier_string += ", "
         prediction_string = ";".join([str(label) for label in classifier.prediction])
-        classifier_string += (prediction_string + "\t")
-        parameter_string = str("%.4f" % classifier.fitness) + "\t" + \
-            str("%.4f" % classifier.loss) + "\t" + \
-            str("%d" % classifier.correct_count) + "\t" + \
-            str("%d" % classifier.numerosity) + "\t" + \
-            str("%d" % classifier.match_count) + "\t" + \
-            str("%.4f" % classifier.ave_matchset_size) + "\t" + \
-            str("%d" % classifier.init_time) + "\t" + \
-            str("%d" % classifier.ga_time) + "\t"
+        classifier_string += (prediction_string + ", ")
+        parameter_string = str("%.4f" % classifier.fitness) + ", " + \
+            str("%.4f" % classifier.loss) + ", " + \
+            str("%d" % classifier.correct_count) + ", " + \
+            str("%d" % classifier.numerosity) + ", " + \
+            str("%d" % classifier.match_count) + ", " + \
+            str("%.4f" % classifier.ave_matchset_size) + ", " + \
+            str("%d" % classifier.init_time) + ", " + \
+            str("%d" % classifier.ga_time)
         classifier_string += parameter_string
         return classifier_string
 
