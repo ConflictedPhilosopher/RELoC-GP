@@ -69,7 +69,7 @@ class ClassifierMethods:
         for ref in classifier1.specified_atts:
             if ref not in classifier2.specified_atts:
                 return False
-            if self.dtypes[ref] == "float64":
+            if self.dtypes[ref] == 1:
                 if classifier1.condition[ref][0] < classifier2.condition[ref][0]:
                     return False
                 if classifier1.condition[ref][1] > classifier2.condition[ref][1]:
@@ -81,7 +81,7 @@ class ClassifierMethods:
         for ref in range(NO_FEATURES):
             if ref in classifier.specified_atts:
                 ind = classifier.specified_atts.index(ref)
-                if self.dtypes[ref] == "float64":
+                if self.dtypes[ref] == 1:
                     classifier_string += (str("%.4f" % classifier.condition[ind][0]) + ';'
                                           + str("%.4f" % classifier.condition[ind][1]))
                 else:
