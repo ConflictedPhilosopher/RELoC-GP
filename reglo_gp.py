@@ -9,6 +9,7 @@ import os.path
 from config import *
 from classifier_set import ClassifierSets
 from prediction import Prediction
+from genetic_algorithm import GeneticAlgorithm
 from timer import Timer
 from performance import Performance
 from reporting import Reporting
@@ -26,6 +27,7 @@ class REGLoGP:
             self.population = []
         else:
             self.population = ClassifierSets(env.preprocessing.attribute_info, env.preprocessing.dtypes, self.timer)
+            self.ga = GeneticAlgorithm(env.preprocessing.attribute_info, env.preprocessing.dtypes)
             self.iteration = 0
             try:
                 track_file = os.path.join(os.path.curdir, REPORT_PATH, "tracking_" + str(self.exp) + ".txt")
@@ -42,17 +44,18 @@ class REGLoGP:
             print(self.timer.get_timer_report())
 
     def train_model(self):
+        samples_training = self.env.preprocessing.data_train_list
         performance = Performance(self.env.preprocessing.label_count)
         stop_training = False
         loss_old = 1.0
         while self.iteration < MAX_ITERATION and not stop_training:
-            sample = self.env.preprocessing.data_train_list[self.iteration % self.env.preprocessing.data_train_count]
+            sample = samples_training[self.iteration % samples_training.__len__()]
             self.train_iteration(sample)
 
             def track_performance():
-                samples = self.env.preprocessing.data_test_list
+                samples_test = self.env.preprocessing.data_test_list
                 loss = 0
-                for test_sample in samples:
+                for test_sample in samples_test:
                     self.population.make_eval_matchset(test_sample[0])
                     if not self.population.matchset:
                         self.no_match += 1
@@ -60,7 +63,7 @@ class REGLoGP:
                         predict = Prediction(self.population.popset, self.population.matchset)
                         label_prediction = predict.max_prediction()
                         loss += performance.hamming_loss(label_prediction, test_sample[1])
-                return loss / samples.__len__()
+                return loss / samples_test.__len__()
 
             if (self.iteration % TRACK_FREQ) == 0 and self.iteration > 0:
                 self.timer.start_evaluation()
@@ -99,7 +102,10 @@ class REGLoGP:
 
         self.population.make_correctset(sample[1])
         self.population.update_sets(sample[1])
-        """ Here you need to run the GA """
+
+        if (self.iteration - self.population.get_time_average()) > THETA_GA:
+            [self.population.popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
+            self.ga.apply(self.population.correctset, self.population.popset, self.iteration, sample[0])
 
         self.population.deletion()
         self.population.clear_sets()
