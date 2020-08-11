@@ -43,7 +43,7 @@ class Preprocessing:
             self.data_complete = self.load_data(data_complete)
         else:
             self.data_complete = pd.concat([self.data_train, self.data_test])
-        self.data_complete_count = len(self.data_complete)
+        self.data_complete_count = self.data_complete.__len__()
 
 # load data (.csv)
     def load_data(self, path):

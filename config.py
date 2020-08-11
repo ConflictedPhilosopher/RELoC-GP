@@ -30,6 +30,7 @@ RANK_CUT = 1
 
 # ------------------------------------------------------------------------------
 INIT_FITNESS = 0.01
+FITNESS_RED = 0.1
 NU = 1
 THETA_SUB = 200
 LOSS_SUB = 0.01
@@ -39,5 +40,9 @@ ERROR = 1e-3
 DELTA = 0.1
 THETA_DEL = 20
 
-
+# GA parameters
+SELECTION = 't'   # 'r'
+P_XOVER = 0.8
+P_MUT = 0.04
+THETA_GA = 50
 

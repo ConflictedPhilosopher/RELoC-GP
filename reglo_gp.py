@@ -9,7 +9,6 @@ import os.path
 from config import *
 from classifier_set import ClassifierSets
 from prediction import Prediction
-from genetic_algorithm import GeneticAlgorithm
 from timer import Timer
 from performance import Performance
 from reporting import Reporting
@@ -27,7 +26,6 @@ class REGLoGP:
             self.population = []
         else:
             self.population = ClassifierSets(env.preprocessing.attribute_info, env.preprocessing.dtypes, self.timer)
-            self.ga = GeneticAlgorithm(env.preprocessing.attribute_info, env.preprocessing.dtypes)
             self.iteration = 0
             try:
                 track_file = os.path.join(os.path.curdir, REPORT_PATH, "tracking_" + str(self.exp) + ".txt")
@@ -105,7 +103,7 @@ class REGLoGP:
 
         if (self.iteration - self.population.get_time_average()) > THETA_GA:
             [self.population.popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
-            self.ga.apply(self.population.correctset, self.population.popset, self.iteration, sample[0])
+            self.population.apply_ga(self.iteration, sample[0])
 
         self.population.deletion()
         self.population.clear_sets()
