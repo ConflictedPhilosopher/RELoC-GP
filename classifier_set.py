@@ -5,7 +5,6 @@
 #
 # ------------------------------------------------------------------------------
 import random
-import timer
 
 from classifier_methods import ClassifierMethods
 from classifier import Classifier
@@ -20,7 +19,8 @@ class ClassifierSets:
         self.micro_pop_size = 0
         self.ave_generality = 0.0
         self.ave_loss = 0.0
-        self.cl_methods = ClassifierMethods(dtypes, timer)
+        self.cl_methods = ClassifierMethods(dtypes)  # Here you can use inheritance instead
+        self.classifier = Classifier()  # Here you can use inheritance
         self.attribute_info = attribute_info
         self.dtypes = dtypes
         self.timer = timer
@@ -54,7 +54,8 @@ class ClassifierSets:
                 return
 
         if covering:
-            new_classifier = Classifier(self.attribute_info, self.dtypes, numerosity_sum + 1, it, state, target)
+            new_classifier = self.classifier.classifier_cover(numerosity_sum + 1, it, state, target,
+                                                              self.attribute_info, self.dtypes)
             self.insert_classifier_pop(new_classifier, True)
             self.matchset.append(self.popset.__len__() - 1)
 

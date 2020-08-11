@@ -12,7 +12,8 @@ from config import *
 
 
 class Classifier:
-    def __init__(self, attribute_info, dtypes, a=None, b=None, c=None, d=None):
+    def __init__(self):
+        # def __init__(self, attribute_info, dtypes, a=None, b=None, c=None, d=None):
         self.specified_atts = []
         self.condition = []
         self.prediction = {}
@@ -27,14 +28,14 @@ class Classifier:
         self.ga_time = 0
         self.deletion_vote = 0.0
 
-        if isinstance(c, list):
-            self.classifier_cover(a, b, c, d, attribute_info, dtypes)
-        elif isinstance(a, Classifier):
-            self.classifier_copy(a, b)
-        elif isinstance(a, list) and not b:
-            self.classifier_reboot(a, dtypes)
-        else:
-            print("Classifier: Error building classifier.")
+        # if isinstance(c, list):
+        #     self.classifier_cover(a, b, c, d, attribute_info, dtypes)
+        # elif isinstance(a, Classifier):
+        #     self.classifier_copy(a, b)
+        # elif isinstance(a, list) and not b:
+        #     self.classifier_reboot(a, dtypes)
+        # else:
+        #     print("Classifier: Error building classifier.")
 
     def classifier_cover(self, set_size, it, state, target, attribute_info, dtypes):
         self.ga_time = it
