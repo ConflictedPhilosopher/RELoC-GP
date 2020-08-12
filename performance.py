@@ -29,7 +29,7 @@ class Performance:
         self.macro_precision = 0.0
         self.macro_recall = 0.0
         self.macro_fscore = 0.0
-        self.roc_auc = []
+        self.roc_auc = 0.0
 
     def exact_match(self, prediction, target):
         if prediction == target:
@@ -66,15 +66,19 @@ class Performance:
         return prediction.symmetric_difference(target).__len__() / self.label_count
 
     def rank_loss(self, vote, target):
-        target_complement = set(range(1, self.label_count+1)).difference(target)
-        loss = [1 for tc in target_complement for t in target if vote[t] <= vote[tc]].__len__()
+        target_complement = set(range(0, self.label_count)).difference(target)
+        loss = 0
+        for tc in target_complement:
+            for t in target:
+                if vote.get(t, 0) <= vote.get(tc, -1e-5):
+                    loss += 1
         try:
             return loss / (target.__len__() * target_complement.__len__())
         except ZeroDivisionError:
             return 0.0
 
     def one_error(self, vote, target):
-        labels_max_vote = set(max(vote.iteritems(), key=operator.itemgetter(1)))
+        labels_max_vote = {max(vote.items(), key=operator.itemgetter(1))[0]}
         if labels_max_vote.intersection(target).__len__() > 0:
             return 0
         else:
@@ -130,14 +134,15 @@ class Performance:
             / (self.macro_precision + self.macro_recall + 1e-3)
 
     def roc(self, vote_list, target_list):
+        roc_auc = []
         fpr = dict()
         tpr = dict()
         for l in range(2):
             fpr[l], tpr[l], _ = roc_curve(target_list[:, l], vote_list[:, l])
-            self.roc_auc[l] = auc(fpr[l], tpr[l])
-        where_are_NaNs = np.isnan(self.roc_auc)
-        self.roc_auc[where_are_NaNs] = 0.0
-        self.roc_auc = sum(self.roc_auc) / self.label_count
+            roc_auc[l] = auc(fpr[l], tpr[l])
+        where_are_NaNs = np.isnan(roc_auc)
+        roc_auc[where_are_NaNs] = 0.0
+        self.roc_auc = sum(roc_auc) / self.label_count
 
 # extended hamming loss
 
