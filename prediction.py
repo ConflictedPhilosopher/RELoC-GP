@@ -17,7 +17,6 @@ class Prediction:
         self.matchset = matchset
 
     def max_prediction(self):
-        random.seed(SEED_NUMBER)
         tiebreak_numerosity = {}
 
         def update_value(lp, ref):
@@ -32,18 +31,18 @@ class Prediction:
         max_vote = max(self.vote.values())
 
         if max_vote == 0:
-            self.prediction = set(list(self.vote.keys())[random.randint(0, self.vote.keys().__len__() - 1)])
+            [self.prediction.add(label) for label in list(self.vote.keys())[random.randint(0, self.vote.keys().__len__() - 1)]]
             return
         candidate_lp = [lp for lp, v in self.vote.items() if v == max_vote]
         if candidate_lp.__len__() > 1:
-            max_numerosity = max(tiebreak_numerosity.values())
+            max_numerosity = max([tiebreak_numerosity[lp] for lp in candidate_lp])
             candidate_lp = [lp for lp in candidate_lp if tiebreak_numerosity[lp] == max_numerosity]
             if candidate_lp.__len__() > 1:
-                self.prediction = set(candidate_lp[random.randint(0, candidate_lp.__len__() - 1)])
+                [self.prediction.add(label) for label in candidate_lp[random.randint(0, candidate_lp.__len__() - 1)]]
             else:
-                self.prediction = set(candidate_lp)
+                [self.prediction.add(label) for label in candidate_lp[0]]
         else:
-            self.prediction = set(candidate_lp)
+            [self.prediction.add(label) for label in candidate_lp[0]]
         return self.prediction
 
     def aggregate_prediction(self):
