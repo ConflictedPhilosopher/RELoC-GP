@@ -5,7 +5,6 @@
 #
 # ------------------------------------------------------------------------------
 import random
-from copy import deepcopy
 
 from classifier_methods import ClassifierMethods
 from classifier import Classifier
@@ -55,18 +54,18 @@ class ClassifierSets:
                 return
 
         if covering:
-            new_classifier = self.classifier.classifier_cover(numerosity_sum + 1, it, state, target,
-                                                              self.attribute_info, self.dtypes)
+            new_classifier = Classifier()
+            new_classifier.classifier_cover(numerosity_sum + 1, it, state, target,
+                                            self.attribute_info, self.dtypes)
             self.insert_classifier_pop(new_classifier, True)
             self.matchset.append(self.popset.__len__() - 1)
 
     def make_eval_matchset(self, state):
 
         def match(classifier, state0):
-            self.timer.start_subsumption()
             for idx, ref in enumerate(classifier.specified_atts):
                 x = state0[ref]
-                if self.dtypes[ref] == "float64":
+                if self.dtypes[ref]:
                     if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
                         pass
                     else:
@@ -76,7 +75,6 @@ class ClassifierSets:
                         pass
                     else:
                         return False
-            self.timer.stop_subsumption()
             return True
 
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
@@ -93,7 +91,6 @@ class ClassifierSets:
         self.timer.stop_deletion()
 
     def delete_from_sets(self):
-        random.seed(SEED_NUMBER)
         ave_fitness = sum([classifier.fitness for classifier in self.popset])\
                        / float(self.micro_pop_size)
         vote_list = [self.cl_methods.get_deletion_vote(cl, ave_fitness) for cl in self.popset]
@@ -143,11 +140,15 @@ class ClassifierSets:
             offspring1.condition, offspring1.specified_atts, changed1 = self.mutate(offspring1, state)
             offspring2.condition, offspring2.specified_atts, changed2 = self.mutate(offspring2, state)
         else:
-            parent1 = deepcopy(self.popset[self.correctset[0]])
+            parent1 = self.popset[self.correctset[0]]
             parent2 = parent1
-            offspring1, offspring2 = deepcopy(parent1)
+            offspring1 = Classifier()
+            offspring1.classifier_copy(parent1, iteration)
+            offspring2 = Classifier()
+            offspring2.classifier_copy(parent2, iteration)
+
             offspring1.condition, offspring1.specified_atts, changed1 = self.mutate(offspring1, state)
-            offspring2.condition, offspring2.specified_atts, changed2 = self.mutate(offspring1, state)
+            offspring2.condition, offspring2.specified_atts, changed2 = self.mutate(offspring2, state)
 
         if changed0:
             offspring1.set_fitness(FITNESS_RED * (offspring1.fitness + offspring2.fitness)/2)
@@ -162,18 +163,22 @@ class ClassifierSets:
     def selection(self, iteration):
         fitness = [self.popset[i].fitness for i in self.correctset]
         if SELECTION == 'r':
-            parent1 = deepcopy(self.popset[self.roulette(fitness)])
-            parent2 = deepcopy(self.popset[self.roulette(fitness)])
+            roulette = self.roulette(fitness)
+            parent1 = self.popset[next(roulette)]
+            parent2 = self.popset[next(roulette)]
         elif SELECTION == 't':
             candidates = [self.popset[idx] for idx in self.correctset]
-            parent1 = deepcopy(self.tournament(candidates))
-            parent2 = deepcopy(self.tournament(candidates))
+            tournament = self.tournament(candidates)
+            parent1 = next(tournament)
+            parent2 = next(tournament)
         else:
             print("Error: GA selection method not identified.")
             return
 
-        offspring1 = self.classifier.classifier_copy(parent1, iteration)
-        offspring2 = self.classifier.classifier_copy(parent2, iteration)
+        offspring1 = Classifier()
+        offspring1.classifier_copy(parent1, iteration)
+        offspring2 = Classifier()
+        offspring2.classifier_copy(parent2, iteration)
 
         return [parent1, parent2, offspring1, offspring2]
 
@@ -195,7 +200,7 @@ class ClassifierSets:
 
     def tournament(self, candidates, tsize=5):
         for i in range(candidates.__len__()):
-            candidates = random.sample(candidates, tsize)
+            candidates = random.sample(candidates, min(candidates.__len__(), tsize))
             yield max(candidates, key=lambda x: x.fitness)
 
     def xover(self, offspring1, offspring2):
@@ -227,13 +232,13 @@ class ClassifierSets:
                 elif choice_key == 1:  # swap max of the range
                     cond_child1[idx1][1], cond_child2[idx2][1] = cond_child2[idx2][1], cond_child1[idx1][1]
                 elif choice_key == 2:  # absorb ranges into child 1
-                    cond_child1[idx1] = [min(cond_child1[idx1], cond_child2[idx2]),
-                                         max(cond_child1[idx1], cond_child2[idx2])]
+                    cond_child1[idx1] = [min(cond_child1[idx1][0], cond_child2[idx2][0]),
+                                         max(cond_child1[idx1][1], cond_child2[idx2][1])]
                     cond_child2.pop(idx2)
                     atts_child2.remove(att0)
                 else:  # absorb ranges into child 2
-                    cond_child2[idx2] = [min(cond_child1[idx1], cond_child2[idx2]),
-                                         max(cond_child1[idx1], cond_child2[idx2])]
+                    cond_child2[idx2] = [min(cond_child1[idx1][0], cond_child2[idx2][0]),
+                                         max(cond_child1[idx1][1], cond_child2[idx2][1])]
                     cond_child1.pop(idx1)
                     atts_child1.remove(att0)
             else:  # Discrete attribute
@@ -251,7 +256,7 @@ class ClassifierSets:
 
         return [offspring1, offspring2, changed]
 
-    def mutate(self, state, child_classifier):
+    def mutate(self, child_classifier, state):
         changed = False
         atts_child = child_classifier.specified_atts
         cond_child = child_classifier.condition
@@ -259,10 +264,11 @@ class ClassifierSets:
         def mutate_single(idx):
             if idx in atts_child:  # attribute specified in classifier condition
                 if random.random() < PROB_HASH:  # remove the specification
-                    cond_child.pop(atts_child.index(idx))
+                    ref_2_cond = atts_child.index(idx)
                     atts_child.remove(idx)
+                    cond_child.pop(ref_2_cond)
                     return True
-                elif self.attribute_info[idx]:  # continuous attribute
+                elif self.dtypes[idx]:  # continuous attribute
                     mutate_range = random.random() * float(self.attribute_info[idx][1] -
                                                            self.attribute_info[idx][0]) / 2
                     if random.random() < 0.5:  # mutate min of the range
@@ -298,9 +304,9 @@ class ClassifierSets:
     def insert_discovered_classifier(self, offspring1, offspring2, parent1, parent2):
         if DO_SUBSUMPTION:
             self.timer.start_subsumption()
-            if offspring1.specified_atts.__len__ > 0:
+            if offspring1.specified_atts.__len__() > 0:
                 self.subsume_into_parents(offspring1, parent1, parent2)
-            if offspring2.specified_atts.__len__ > 0:
+            if offspring2.specified_atts.__len__() > 0:
                 self.subsume_into_parents(offspring2, parent1, parent2)
             self.timer.stop_subsumption()
         else:
@@ -386,6 +392,6 @@ class ClassifierSets:
 
 # other methods
     def get_pop_tracking(self):
-        tracking = str(self.popset.__len__()) + "\t" + str(self.micro_pop_size) \
-                   + "\t" + str("%.4f" % self.ave_loss) + "\t" + str("%.4f" % self.ave_generality)
+        tracking = str(self.popset.__len__()) + ", " + str(self.micro_pop_size) \
+                   + ", " + str("%.4f" % self.ave_loss) + ", " + str("%.4f" % self.ave_generality)
         return tracking
