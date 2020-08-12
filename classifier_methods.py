@@ -11,23 +11,6 @@ from config import *
 class ClassifierMethods:
     def __init__(self, dtypes):
         self.dtypes = dtypes
-    # # Will be removed
-    # def match(self, classifier, state):
-    #     self.timer.start_subsumption()
-    #     for idx, ref in enumerate(classifier.specified_atts):
-    #         x = state[ref]
-    #         if self.dtypes[ref] == "float64":
-    #             if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
-    #                 pass
-    #             else:
-    #                 return False
-    #         else:
-    #             if x == classifier.condition[idx]:
-    #                 pass
-    #             else:
-    #                 return False
-    #     self.timer.stop_subsumption()
-    #     return True
 
     def get_deletion_vote(self, classifier, ave_fitness):
         if classifier.fitness >= ave_fitness * DELTA or classifier.match_count < THETA_DEL:
@@ -43,9 +26,9 @@ class ClassifierMethods:
     def is_equal(self, classifier1, classifier2):
         if classifier1.prediction == classifier2.prediction and \
                 len(classifier1.specified_atts) == len(classifier2.specified_atts):
-            if classifier1.specified_atts.sort() == classifier2.specified_atts.sort():
-                for ref in classifier1.specified_atts:
-                    if classifier1.condition[ref] == classifier2.condition[ref]:
+            if sorted(classifier1.specified_atts) == sorted(classifier2.specified_atts):
+                for idx in range(classifier1.specified_atts.__len__()):
+                    if classifier1.condition[idx] == classifier2.condition[idx]:
                         pass
                     else:
                         return False
@@ -98,9 +81,10 @@ class ClassifierMethods:
             str("%d" % classifier.match_count) + ", " + \
             str("%.4f" % classifier.ave_matchset_size) + ", " + \
             str("%d" % classifier.init_time) + ", " + \
-            str("%d" % classifier.ga_time)
+            str("%d" % classifier.ga_time) + "\n"
         classifier_string += parameter_string
         return classifier_string
+
 
 if __name__ == "__main__":
     print('nothing goes here!')
