@@ -100,13 +100,13 @@ class Timer:
 
     def get_timer_report(self):
         """ Reports the time summaries for this run. Returns a string ready to be printed out."""
-        output_time = "Global Time\t" + str(self.global_time / 60.0) + \
-                      "\nMatching Time\t" + str(self.global_matching / 60.0) + \
-                      "\nPartitioning Time\t" + str(self.global_label_partition / 60.0) + \
-                      "\nDeletion Time\t" + str(self.global_deletion / 60.0) + \
-                      "\nSubsumption Time\t" + str(self.global_subsumption / 60.0) + \
-                      "\nSelection Time\t" + str(self.global_selection / 60.0) + \
-                      "\nEvaluation Time\t" + str(self.global_evaluation / 60.0) + "\n"
+        output_time = "Global Time\t" + str("%.4f" % (self.global_time / 60.0)) + \
+                      "\nMatching Time\t" + str("%.4f" % (self.global_matching / 60.0)) + \
+                      "\nPartitioning Time\t" + str("%.4f" % (self.global_label_partition / 60.0)) + \
+                      "\nDeletion Time\t" + str("%.4f" % (self.global_deletion / 60.0)) + \
+                      "\nSubsumption Time\t" + str("%.4f" % (self.global_subsumption / 60.0)) + \
+                      "\nSelection Time\t" + str("%.4f" % (self.global_selection / 60.0)) + \
+                      "\nEvaluation Time\t" + str("%.4f" % (self.global_evaluation / 60.0)) + "\n"
 
         return output_time
 
