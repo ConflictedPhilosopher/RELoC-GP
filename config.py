@@ -18,12 +18,12 @@ REPORT_PATH = "report"
 NO_FEATURES = 72
 
 REBOOT_MODEL = False
-MAX_ITERATION = 10000
-MAX_CLASSIFIER = 100
+MAX_ITERATION = 3000
+MAX_CLASSIFIER = 500
 PROB_HASH = 0.5
-DO_SUBSUMPTION = False
+DO_SUBSUMPTION = True
 
-PREDICTION_METHOD = 'max'
+PREDICTION_METHOD = 2  # 1: max prediction - 2: aggregated prediction
 THRESHOLD = 'OT'
 THETA = 0.5
 RANK_CUT = 1
@@ -35,13 +35,13 @@ NU = 1
 THETA_SUB = 200
 LOSS_SUB = 0.01
 BETA = 0.1
-TRACK_FREQ = 5000
+TRACK_FREQ = 500
 ERROR = 1e-3
 DELTA = 0.1
 THETA_DEL = 20
 
 # GA parameters
-SELECTION = 't'   # 'r'
+SELECTION = 't'   # 'r': roulette wheel selection - 't': tournament selection
 P_XOVER = 0.8
 P_MUT = 0.04
 THETA_GA = 50
