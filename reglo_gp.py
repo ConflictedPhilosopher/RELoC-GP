@@ -6,6 +6,7 @@
 # ------------------------------------------------------------------------------
 
 import os.path
+
 from config import *
 from classifier_set import ClassifierSets
 from prediction import Prediction
@@ -26,19 +27,21 @@ class REGLoGP:
             self.population = []
         else:
             self.population = ClassifierSets(env.preprocessing.attribute_info, env.preprocessing.dtypes, self.timer)
-            self.iteration = 0
+            self.iteration = 1
             try:
-                track_file = os.path.join(os.path.curdir, REPORT_PATH, "tracking_" + str(self.exp) + ".txt")
+                track_file = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "tracking_" + str(self.exp) + ".csv")
                 self.training_track = open(track_file, 'w')
             except Exception as exc:
                 print(exc)
                 print("can not open track_" + str(self.exp) + ".txt")
                 raise
             else:
-                self.training_track.write("iteration\tmacroPop\tmicroPop\taveLoss"
-                                          "\taveGenerality\ttestLoss\ttime(min)\n")
+                self.training_track.write("iteration, macroPop, microPop, aveLoss, "
+                                          "aveGenerality, testLoss, time(min)\n")
             self.train_model()
+            self.training_track.close()
             self.timer.get_global_timer()
+            print("\n Execution time (min)\n")
             print(self.timer.get_timer_report())
 
     def train_model(self):
@@ -46,7 +49,7 @@ class REGLoGP:
         performance = Performance(self.env.preprocessing.label_count)
         stop_training = False
         loss_old = 1.0
-        while self.iteration < MAX_ITERATION and not stop_training:
+        while self.iteration < (MAX_ITERATION + 1) and not stop_training:
             sample = samples_training[self.iteration % samples_training.__len__()]
             self.train_iteration(sample)
 
@@ -64,6 +67,7 @@ class REGLoGP:
                 return loss / samples_test.__len__()
 
             if (self.iteration % TRACK_FREQ) == 0 and self.iteration > 0:
+                print('Iteration ', self.iteration)
                 self.timer.start_evaluation()
                 if abs(self.tracked_loss/TRACK_FREQ - loss_old) < ERROR:
                     stop_training = True
@@ -71,13 +75,13 @@ class REGLoGP:
                     loss_old = self.tracked_loss/TRACK_FREQ
                 test_loss = track_performance()
                 self.population.pop_average_eval()
-                self.training_track.write(str(self.iteration) + "\t" + self.population.get_pop_tracking() + "\t"
-                                          + str("%.4f" % test_loss) + "\t"
+                self.training_track.write(str(self.iteration) + ", " + self.population.get_pop_tracking() + ", "
+                                          + str("%.4f" % test_loss) + ", "
                                           + str("%.4f" % self.timer.get_global_timer()) + "\n")
                 self.timer.stop_evaluation()
                 self.tracked_loss = 0
+
             self.iteration += 1
-        self.training_track.close()
 
         self.timer.start_evaluation()
         self.population.pop_average_eval()
@@ -86,7 +90,7 @@ class REGLoGP:
         self.timer.stop_evaluation()
 
         reporting = Reporting(self.exp)
-        reporting.write_model_stats(self.population.popset, self.timer, train_evaluation, train_coverage,
+        reporting.write_model_stats(self.population, self.timer, train_evaluation, train_coverage,
                                     test_evaluation, test_coverage)
         reporting.write_pop(self.population.popset, self.env.preprocessing.dtypes)
 
@@ -95,7 +99,8 @@ class REGLoGP:
         self.timer.start_evaluation()
         predict = Prediction(self.population.popset, self.population.matchset)
         label_prediction = predict.max_prediction()
-        self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__() / self.env.preprocessing.label_count)
+        self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__()
+                              / self.env.preprocessing.label_count)
         self.timer.stop_evaluation()
 
         self.population.make_correctset(sample[1])
@@ -127,7 +132,7 @@ class REGLoGP:
                 self.no_match += 1
             else:
                 predict = Prediction(self.population.popset, self.population.matchset)
-                if PREDICTION_METHOD == 'max':
+                if PREDICTION_METHOD == 1:
                     label_prediction = predict.max_prediction()
                 else:
                     predict.aggregate_prediction()
