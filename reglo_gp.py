@@ -38,14 +38,14 @@ class REGLoGP:
             else:
                 self.training_track.write("iteration, macroPop, microPop, aveLoss, "
                                           "aveGenerality, testLoss, time(min)\n")
-            self.train_model()
-            self.training_track.close()
-            self.timer.get_global_timer()
-            print("Process Time (min):")
-            print(self.timer.get_timer_report())
 
     def train_model(self):
-        samples_training = self.data.data_train_list
+        if self.data.data_train_folds:
+            samples_training = self.data.data_train_folds[self.exp]
+            samples_test = self.data.data_valid_folds[self.exp]
+        else:
+            samples_training = self.data.data_train_list
+            samples_test = self.data.data_test_list
         performance = Performance(self.data.label_count)
         stop_training = False
         loss_old = 1.0
@@ -54,7 +54,6 @@ class REGLoGP:
             self.train_iteration(sample)
 
             def track_performance():
-                samples_test = self.data.data_test_list
                 loss = 0
                 for test_sample in samples_test:
                     self.population.make_eval_matchset(test_sample[0])
@@ -82,6 +81,8 @@ class REGLoGP:
                 self.tracked_loss = 0
 
             self.iteration += 1
+            
+        self.training_track.close()
 
         self.timer.start_evaluation()
         self.population.pop_average_eval()
@@ -93,7 +94,12 @@ class REGLoGP:
         reporting.write_model_stats(self.population, self.timer, train_evaluation, train_coverage,
                                     test_evaluation, test_coverage)
         reporting.write_pop(self.population.popset, self.data.dtypes)
-        return self.exp
+        global_time = self.timer.get_global_timer()
+
+        print("Process Time (min):")
+        print(round(global_time, 5))
+
+        return test_evaluation
 
     def train_iteration(self, sample):
         self.population.make_matchset(sample[0], sample[1], self.iteration)
@@ -120,9 +126,15 @@ class REGLoGP:
         performance = Performance(self.data.label_count)
         vote_list = []
         if test:
-            samples = self.data.data_test_list
+            if self.data.data_valid_folds:
+                samples = self.data.data_valid_folds[self.exp]
+            else:
+                samples = self.data.data_test_list
         else:
-            samples = self.data.data_train_list
+            if self.data.data_train_folds:
+                samples = self.data.data_train_folds[self.exp]
+            else:
+                samples = self.data.data_train_list
 
         def update_performance(sample):
             self.population.make_eval_matchset(sample[0])
