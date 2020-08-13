@@ -34,7 +34,7 @@ class Preprocessing:
         self.data_valid_folds = []
         self.default_split = 0.7
 
-    def main(self,  train_test=None, cv=None, complete=None):
+    def main(self,  train_test, cv, complete):
         data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + ".csv")
         train_data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_train.csv")
         test_data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_test.csv")
