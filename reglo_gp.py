@@ -16,9 +16,9 @@ from reporting import Reporting
 
 
 class REGLoGP:
-    def __init__(self, exp, env):
+    def __init__(self, exp, data):
         self.exp = exp
-        self.env = env
+        self.data = data
         self.tracked_loss = 0
         self.no_match = 0
         self.timer = Timer()
@@ -26,7 +26,7 @@ class REGLoGP:
         if REBOOT_MODEL:
             self.population = []
         else:
-            self.population = ClassifierSets(env.preprocessing.attribute_info, env.preprocessing.dtypes, self.timer)
+            self.population = ClassifierSets(data.attribute_info, data.dtypes, self.timer)
             self.iteration = 1
             try:
                 track_file = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "tracking_" + str(self.exp) + ".csv")
@@ -41,12 +41,12 @@ class REGLoGP:
             self.train_model()
             self.training_track.close()
             self.timer.get_global_timer()
-            print("\n Execution time (min)\n")
+            print("Process Time (min):")
             print(self.timer.get_timer_report())
 
     def train_model(self):
-        samples_training = self.env.preprocessing.data_train_list
-        performance = Performance(self.env.preprocessing.label_count)
+        samples_training = self.data.data_train_list
+        performance = Performance(self.data.label_count)
         stop_training = False
         loss_old = 1.0
         while self.iteration < (MAX_ITERATION + 1) and not stop_training:
@@ -54,7 +54,7 @@ class REGLoGP:
             self.train_iteration(sample)
 
             def track_performance():
-                samples_test = self.env.preprocessing.data_test_list
+                samples_test = self.data.data_test_list
                 loss = 0
                 for test_sample in samples_test:
                     self.population.make_eval_matchset(test_sample[0])
@@ -92,7 +92,8 @@ class REGLoGP:
         reporting = Reporting(self.exp)
         reporting.write_model_stats(self.population, self.timer, train_evaluation, train_coverage,
                                     test_evaluation, test_coverage)
-        reporting.write_pop(self.population.popset, self.env.preprocessing.dtypes)
+        reporting.write_pop(self.population.popset, self.data.dtypes)
+        return self.exp
 
     def train_iteration(self, sample):
         self.population.make_matchset(sample[0], sample[1], self.iteration)
@@ -100,7 +101,7 @@ class REGLoGP:
         predict = Prediction(self.population.popset, self.population.matchset)
         label_prediction = predict.max_prediction()
         self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__()
-                              / self.env.preprocessing.label_count)
+                              / self.data.label_count)
         self.timer.stop_evaluation()
 
         self.population.make_correctset(sample[1])
@@ -116,12 +117,12 @@ class REGLoGP:
     def evaluation(self, test=True):
         self.no_match = 0
         multi_label_perf = dict()
-        performance = Performance(self.env.preprocessing.label_count)
+        performance = Performance(self.data.label_count)
         vote_list = []
         if test:
-            samples = self.env.preprocessing.data_test_list
+            samples = self.data.data_test_list
         else:
-            samples = self.env.preprocessing.data_train_list
+            samples = self.data.data_train_list
 
         def update_performance(sample):
             self.population.make_eval_matchset(sample[0])
