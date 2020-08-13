@@ -16,12 +16,14 @@ DATA_DIR = "D:\Datasets"
 DATA_HEADER = "emotions"
 REPORT_PATH = "report"
 NO_FEATURES = 72
+GET_MLD_PROP = False
 
 REBOOT_MODEL = False
-MAX_ITERATION = 3000
+MAX_ITERATION = 500
 MAX_CLASSIFIER = 500
 PROB_HASH = 0.5
 DO_SUBSUMPTION = True
+AVG_COUNT = 1
 
 PREDICTION_METHOD = 2  # 1: max prediction - 2: aggregated prediction
 THRESHOLD = 'OT'
