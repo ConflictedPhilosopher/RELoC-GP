@@ -12,7 +12,7 @@ from config import *
 
 
 class ClassifierSets:
-    def __init__(self, attribute_info, dtypes, timer):
+    def __init__(self, attribute_info, dtypes, timer, popset=None):
         self.popset = []
         self.matchset = []
         self.correctset = []
@@ -24,6 +24,8 @@ class ClassifierSets:
         self.attribute_info = attribute_info
         self.dtypes = dtypes
         self.timer = timer
+        if popset:
+            self.popset = popset
 
     def make_matchset(self, state, target, it):
 
@@ -93,7 +95,8 @@ class ClassifierSets:
     def delete_from_sets(self):
         ave_fitness = sum([classifier.fitness for classifier in self.popset])\
                        / float(self.micro_pop_size)
-        vote_list = [self.cl_methods.get_deletion_vote(cl, ave_fitness) for cl in self.popset]
+        delete = self.cl_methods.get_deletion_vote
+        vote_list = [delete(cl, ave_fitness) for cl in self.popset]
         vote_sum = sum(vote_list)
         choice_point = vote_sum * random.random()
 
