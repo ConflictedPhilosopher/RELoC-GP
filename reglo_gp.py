@@ -13,6 +13,7 @@ from prediction import Prediction
 from timer import Timer
 from performance import Performance
 from reporting import Reporting
+from reboot_model import RebootModel
 
 
 class REGLoGP:
@@ -24,20 +25,25 @@ class REGLoGP:
         self.timer = Timer()
 
         if REBOOT_MODEL:
-            self.population = []
+            trained_model = RebootModel(self.exp, self.data.dtypes)
+            pop = trained_model.get_model()
+            self.population = ClassifierSets(data.attribute_info, data.dtypes, self.timer, pop)
+            self.population.micro_pop_size = sum([classifier.numerosity for classifier in pop])
+            self.population.pop_average_eval()
         else:
             self.population = ClassifierSets(data.attribute_info, data.dtypes, self.timer)
-            self.iteration = 1
-            try:
-                track_file = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "tracking_" + str(self.exp) + ".csv")
-                self.training_track = open(track_file, 'w')
-            except Exception as exc:
-                print(exc)
-                print("can not open track_" + str(self.exp) + ".txt")
-                raise
-            else:
-                self.training_track.write("iteration, macroPop, microPop, aveLoss, "
-                                          "aveGenerality, testLoss, time(min)\n")
+
+        self.iteration = 1
+        try:
+            track_file = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "tracking_" + str(self.exp) + ".csv")
+            self.training_track = open(track_file, 'w')
+        except Exception as exc:
+            print(exc)
+            print("can not open track_" + str(self.exp) + ".txt")
+            raise
+        else:
+            self.training_track.write("iteration, macroPop, microPop, aveLoss, "
+                                      "aveGenerality, testLoss, time(min)\n")
 
     def train_model(self):
         if self.data.data_train_folds:
@@ -81,7 +87,7 @@ class REGLoGP:
                 self.tracked_loss = 0
 
             self.iteration += 1
-            
+
         self.training_track.close()
 
         self.timer.start_evaluation()
@@ -114,7 +120,8 @@ class REGLoGP:
         self.population.update_sets(sample[1])
 
         if (self.iteration - self.population.get_time_average()) > THETA_GA:
-            [self.population.popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
+            popset = self.population.popset
+            [popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
             self.population.apply_ga(self.iteration, sample[0])
 
         self.population.deletion()
