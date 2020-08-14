@@ -16,7 +16,14 @@ from config import *
 from reglo_gp import REGLoGP
 
 
-# parallel run
+def handle_model(exp, data_p, return_dict_p):
+    # exp, data, return_dict = args
+    model = REGLoGP(exp, data_p)
+    perf = model.train_model()
+    return_dict_p[exp] = perf
+    return perf
+
+
 def run_parallel(olo, cv, cmplt):
     random.seed(SEED_NUMBER)
     os.makedirs(REPORT_PATH, exist_ok=True)
@@ -28,13 +35,6 @@ def run_parallel(olo, cv, cmplt):
         n_jobs = data.data_train_folds.__len__()
     else:
         n_jobs = AVG_COUNT
-
-    def handle_model(exp, data_p, return_dict_p):
-        # exp, data, return_dict = args
-        model = REGLoGP(exp, data_p)
-        perf = model.train_model()
-        return_dict_p[exp] = perf
-        return perf
 
     # start = time.time()
     # arg_instances = [[idx, data, dict()] for idx in range(n_jobs)]
@@ -66,4 +66,4 @@ def avg_performance(perf_dicts):
 
 
 if __name__ == "__main__":
-    run_parallel(0, 1, 0)
+    run_parallel(1, 0, 0)
