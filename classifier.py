@@ -60,41 +60,26 @@ class Classifier:
         self.correct_count = classifier_old.correct_count
 
     def classifier_reboot(self, classifier_info, dtypes):
-        for ref in range(NO_FEATURES):
-            if classifier_info[ref] != "#":
-                if dtypes[ref] == "float64":
-                    self.specified_atts.append(ref)
-                    self.condition.append(list(classifier_info[ref].split(";")))
-                else:
-                    self.specified_atts.append(ref)
-                    self.condition.append(classifier_info[ref])
+        classifier_info = classifier_info.to_list()
+        condition = classifier_info[:NO_FEATURES]
+
+        def update_cond(ref, att_val):
+            if dtypes[ref] == 1:
+                self.specified_atts.append(ref)
+                self.condition.append([float(x) for x in att_val.split(";")])
+            else:
+                self.specified_atts.append(ref)
+                self.condition.append(int(att_val))
+
+        for ref, att_val in enumerate(condition):
+            if att_val == '#' or att_val == ' #':
+                pass
+            else:
+                update_cond(ref, att_val)
 
         self.prediction = set(int(n) for n in classifier_info[NO_FEATURES].split(";"))
-        i = 1
-        self.fitness = float(classifier_info[NO_FEATURES + i])
-        i += 1
-        self.loss = float(classifier_info[NO_FEATURES + i])
-        i += 1
-        self.correct_count = int(classifier_info[NO_FEATURES + i])
-        i += 1
-        self.numerosity = int(classifier_info[NO_FEATURES + i])
-        i += 1
-        self.correct_count = int(classifier_info[NO_FEATURES + i])
-        i = + 1
-        self.ave_matchset_size = float(classifier_info[NO_FEATURES + i])
-        i += 1
-        self.init_time = int(classifier_info[NO_FEATURES + i])
-        i += 1
-        self.ga_time = int(classifier_info[NO_FEATURES + i])
-
-    def update_experience(self):
-        self.match_count += 1
-
-    def update_matchset_size(self, m_size):
-        if self.match_count < 1.0 / BETA:
-            self.ave_matchset_size += (m_size - self.ave_matchset_size) / float(self.match_count)
-        else:
-            self.ave_matchset_size += BETA * (m_size - self.ave_matchset_size)
+        self.fitness, self.loss, self.correct_count, self.numerosity, self.match_count, self.ave_matchset_size, \
+            self.init_time, self.ga_time = classifier_info[NO_FEATURES + 1:]
 
     def update_numerosity(self, num):
         self.numerosity += num
@@ -102,23 +87,42 @@ class Classifier:
     def update_correct(self):
         self.correct_count += 1
 
-    def update_loss(self, target):
-        self.loss += (self.prediction.symmetric_difference(target).__len__() / float(self.match_count))
+    def set_fitness(self, fitness):
+        self.fitness = fitness
 
     def update_ga_time(self, time):
         self.ga_time = time
 
-    def update_fitness(self):
-        self.fitness = max(pow(1 - self.loss, NU), INIT_FITNESS)
+    # def update_loss(self, target):
+    #     self.loss += (self.prediction.symmetric_difference(target).__len__() / float(self.match_count))
 
-    def set_fitness(self, fitness):
-        self.fitness = fitness
+    # def update_fitness(self):
+    #     self.fitness = max(pow(1 - self.loss, NU), INIT_FITNESS)
+
+    # def update_experience(self):
+    #     self.match_count += 1
+
+    # def update_matchset_size(self, m_size):
+    #     if self.match_count < 1.0 / BETA:
+    #         self.ave_matchset_size += (m_size - self.ave_matchset_size) / float(self.match_count)
+    #     else:
+    #         self.ave_matchset_size += BETA * (m_size - self.ave_matchset_size)
 
     def update_params(self, m_size, target):
-        self.update_experience()
-        self.update_matchset_size(m_size)
-        self.update_loss(target)
-        self.update_fitness()
+        #  update_experience()
+        self.match_count += 1
+
+        # update_matchset_size(m_size)
+        if self.match_count < 1.0 / BETA:
+            self.ave_matchset_size += (m_size - self.ave_matchset_size) / float(self.match_count)
+        else:
+            self.ave_matchset_size += BETA * (m_size - self.ave_matchset_size)
+
+        # update_loss(target)
+        self.loss += (self.prediction.symmetric_difference(target).__len__() / float(self.match_count))
+
+        # update_fitness()
+        self.fitness = max(pow(1 - self.loss, NU), INIT_FITNESS)
 
 
 if __name__ == "__main__":
