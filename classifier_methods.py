@@ -71,16 +71,16 @@ class ClassifierMethods:
                     classifier_string += str(classifier.condition[ind])
             else:
                 classifier_string += "#"
-            classifier_string += ", "
+            classifier_string += ","
         prediction_string = ";".join([str(label) for label in classifier.prediction])
-        classifier_string += (prediction_string + ", ")
-        parameter_string = str("%.4f" % classifier.fitness) + ", " + \
-            str("%.4f" % classifier.loss) + ", " + \
-            str("%d" % classifier.correct_count) + ", " + \
-            str("%d" % classifier.numerosity) + ", " + \
-            str("%d" % classifier.match_count) + ", " + \
-            str("%.4f" % classifier.ave_matchset_size) + ", " + \
-            str("%d" % classifier.init_time) + ", " + \
+        classifier_string += (prediction_string + ",")
+        parameter_string = str("%.4f" % classifier.fitness) + "," + \
+            str("%.4f" % classifier.loss) + "," + \
+            str("%d" % classifier.correct_count) + "," + \
+            str("%d" % classifier.numerosity) + "," + \
+            str("%d" % classifier.match_count) + "," + \
+            str("%.4f" % classifier.ave_matchset_size) + "," + \
+            str("%d" % classifier.init_time) + "," + \
             str("%d" % classifier.ga_time) + "\n"
         classifier_string += parameter_string
         return classifier_string
