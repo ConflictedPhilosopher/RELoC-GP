@@ -11,7 +11,6 @@ class Timer:
     def __init__(self):
         self.global_start_ref = time()
         self.global_time = 0.0
-        self.added_time = 0.0     # time to reboot a model
 
         # Matching Time Variable
         self.start_ref_matching = 0.0
@@ -95,7 +94,7 @@ class Timer:
 
     def get_global_timer(self):
         """ Set the global end timer, call at the very end of algorithm. """
-        self.global_time = (time() - self.global_start_ref) + self.added_time
+        self.global_time = (time() - self.global_start_ref)
         return self.global_time / 60.0
 
     def get_timer_report(self):
@@ -109,4 +108,3 @@ class Timer:
                       "\nEvaluation Time\t" + str("%.4f" % (self.global_evaluation / 60.0)) + "\n"
 
         return output_time
-
