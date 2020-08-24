@@ -156,9 +156,13 @@ class ClassifierSets:
         if changed0:
             offspring1.set_fitness(FITNESS_RED * (offspring1.fitness + offspring2.fitness)/2)
             offspring2.set_fitness(offspring1.fitness)
+            offspring1.set_loss((1-FITNESS_RED) * (offspring1.loss + offspring2.loss) / 2)
+            offspring2.set_loss(offspring1.loss)
         else:
             offspring1.set_fitness(FITNESS_RED * offspring1.fitness)
             offspring2.set_fitness(FITNESS_RED * offspring2.fitness)
+            offspring1.set_loss((1-FITNESS_RED) * offspring1.loss)
+            offspring2.set_loss((1-FITNESS_RED) * offspring2.loss)
 
         if changed0 or changed1 or changed2:
             self.insert_discovered_classifier(offspring1, offspring2, parent1, parent2)
@@ -392,6 +396,9 @@ class ClassifierSets:
         except ZeroDivisionError:
             self.ave_generality = None
             self.ave_loss = None
+
+    def pop_compaction(self):
+        self.popset = [classifier for classifier in self.popset if classifier.match_count > 0]
 
 # other methods
     def get_pop_tracking(self):
