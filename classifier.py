@@ -40,7 +40,7 @@ class Classifier:
     def build_match(self, x, att_info, dtype):
         if dtype:
             att_range = att_info[1] - att_info[0]
-            radius = random.randint(25, 75) * 0.01 * (att_range / 2.0)
+            radius = random.randint(25, 50) * 0.01 * (att_range / 2.0)
             return [x - radius, x + radius]
         elif not dtype:
             return x
@@ -57,7 +57,6 @@ class Classifier:
         self.ga_time = it
         self.fitness = classifier_old.fitness
         self.loss = classifier_old.loss
-        self.correct_count = classifier_old.correct_count
 
     def classifier_reboot(self, classifier_info, dtypes):
         classifier_info = classifier_info.to_list()
@@ -87,26 +86,8 @@ class Classifier:
     def update_correct(self):
         self.correct_count += 1
 
-    def set_fitness(self, fitness):
-        self.fitness = fitness
-
     def update_ga_time(self, time):
         self.ga_time = time
-
-    # def update_loss(self, target):
-    #     self.loss += (self.prediction.symmetric_difference(target).__len__() / float(self.match_count))
-
-    # def update_fitness(self):
-    #     self.fitness = max(pow(1 - self.loss, NU), INIT_FITNESS)
-
-    # def update_experience(self):
-    #     self.match_count += 1
-
-    # def update_matchset_size(self, m_size):
-    #     if self.match_count < 1.0 / BETA:
-    #         self.ave_matchset_size += (m_size - self.ave_matchset_size) / float(self.match_count)
-    #     else:
-    #         self.ave_matchset_size += BETA * (m_size - self.ave_matchset_size)
 
     def update_params(self, m_size, target):
         #  update_experience()
@@ -119,11 +100,16 @@ class Classifier:
             self.ave_matchset_size += BETA * (m_size - self.ave_matchset_size)
 
         # update_loss(target)
-        self.loss += (self.prediction.symmetric_difference(target).__len__() / float(self.match_count))
+        self.loss += (self.prediction.symmetric_difference(target).__len__() / (float(self.match_count * NO_LABELS)))
 
         # update_fitness()
         self.fitness = max(pow(1 - self.loss, NU), INIT_FITNESS)
 
+    def set_fitness(self, fitness):
+        self.fitness = fitness
+
+    def set_loss(self, loss):
+        self.loss = loss
 
 if __name__ == "__main__":
     # classifier = Classifier(1, 0, [0.5, 0.5], {1, 2})
