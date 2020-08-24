@@ -23,6 +23,7 @@ class REGLoGP:
         self.tracked_loss = 0
         self.no_match = 0
         self.timer = Timer()
+        self.track_to_plot = []
 
         if REBOOT_MODEL:
             trained_model = RebootModel(self.exp, self.data.dtypes)
@@ -84,6 +85,7 @@ class REGLoGP:
                                           + str("%.4f" % test_loss) + ", "
                                           + str("%.4f" % self.timer.get_global_timer()) + "\n")
                 self.timer.stop_evaluation()
+                self.track_to_plot.append([self.iteration, self.population.ave_loss, test_loss])
                 self.tracked_loss = 0
 
             self.iteration += 1
@@ -105,7 +107,7 @@ class REGLoGP:
         print("Process Time (min):")
         print(round(global_time, 5))
 
-        return test_evaluation
+        return [test_evaluation, self.track_to_plot]
 
     def train_iteration(self, sample):
         self.population.make_matchset(sample[0], sample[1], self.iteration)
