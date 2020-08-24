@@ -25,7 +25,7 @@ class PlotTrack:
                     self.records[j] += record[-1]
         self.records /= float(records.__len__())
 
-        iterations = range(0, MAX_ITERATION, TRACK_FREQ)
+        iterations = range(TRACK_FREQ, MAX_ITERATION+TRACK_FREQ, TRACK_FREQ)
         # iterations = [int(it) for it in iterations]
         train_loss = self.records[:, 1]
         test_loss = self.records[:, 2]
