@@ -14,14 +14,15 @@ from collections import Counter
 from preprocessing import Preprocessing
 from config import *
 from reglo_gp import REGLoGP
+from plotting import PlotTrack
 
 
-def handle_model(exp, data_p, return_dict_p):
-    # exp, data, return_dict = args
-    model = REGLoGP(exp, data_p)
-    perf = model.train_model()
-    return_dict_p[exp] = perf
-    return perf
+def handle_model(args):
+    exp, data, return_dict = args
+    model = REGLoGP(exp, data)
+    perf, track_to_plot = model.train_model()
+    return_dict[exp] = perf
+    return [perf, track_to_plot]
 
 
 def run_parallel(olo, cv, cmplt):
@@ -36,26 +37,32 @@ def run_parallel(olo, cv, cmplt):
     else:
         n_jobs = AVG_COUNT
 
-    # start = time.time()
-    # arg_instances = [[idx, data, dict()] for idx in range(n_jobs)]
-    # results = Parallel(n_jobs=n_jobs, verbose=1, backend="multiprocessing")(map(delayed(handle_model), arg_instances))
-    # end = time.time()
-    # print('multi-threading time ', (end - start)/60)
-    # avg_performance(results)
-
     start = time.time()
-    manager = multiprocessing.Manager()
-    return_dict = manager.dict()
-    jobs = []
-    for i in range(n_jobs):
-        p = multiprocessing.Process(target=handle_model, args=(i, data, return_dict))
-        jobs.append(p)
-        p.start()
-    for process in jobs:
-        process.join()
+    arg_instances = [[idx, data, dict()] for idx in range(n_jobs)]
+    results = Parallel(n_jobs=n_jobs, verbose=1, backend="multiprocessing")(map(delayed(handle_model), arg_instances))
     end = time.time()
-    print('multi-processing time ', (end - start)/60)
-    avg_performance(return_dict.values())
+    print('multi-threading time ', (end - start)/60)
+
+    perf = [result[0] for result in results]
+    track_to_plot = [result[1] for result in results]
+    avg_performance(perf)
+    plot = PlotTrack()
+    plot.plot_records(track_to_plot)
+
+
+    # start = time.time()
+    # manager = multiprocessing.Manager()
+    # return_dict = manager.dict()
+    # jobs = []
+    # for i in range(n_jobs):
+    #     p = multiprocessing.Process(target=handle_model, args=(i, data, return_dict))
+    #     jobs.append(p)
+    #     p.start()
+    # for process in jobs:
+    #     process.join()
+    # end = time.time()
+    # print('multi-processing time ', (end - start)/60)
+    # avg_performance(return_dict.values())
 
 
 def avg_performance(perf_dicts):
