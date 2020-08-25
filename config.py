@@ -5,30 +5,29 @@
 #
 # ------------------------------------------------------------------------------
 
-# paths
-# file headers
-# training parameters (primary, secondary)
-# evaluation parameters
-
 SEED_NUMBER = 161
 
 DATA_DIR = "D:\Datasets"
 DATA_HEADER = "emotions"
 REPORT_PATH = "report"
 NO_FEATURES = 72
+NO_LABELS = 6
 GET_MLD_PROP = False
 
 REBOOT_MODEL = 0
-MAX_ITERATION = 1000
-MAX_CLASSIFIER = 500
+MAX_ITERATION = 3000
+MAX_CLASSIFIER = 1000
 PROB_HASH = 0.5
 DO_SUBSUMPTION = True
-AVG_COUNT = 10
+AVG_COUNT = 1
 
 PREDICTION_METHOD = 2  # 1: max prediction - 2: aggregated prediction
 THRESHOLD = 'OT'
 THETA = 0.5
 RANK_CUT = 1
+
+K = 2  # number of the label clusters
+L_MIN = 2
 
 # ------------------------------------------------------------------------------
 INIT_FITNESS = 0.01
@@ -47,4 +46,3 @@ SELECTION = 't'   # 'r': roulette wheel selection - 't': tournament selection
 P_XOVER = 0.8
 P_MUT = 0.04
 THETA_GA = 50
-
