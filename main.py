@@ -7,7 +7,6 @@
 import os.path
 from joblib import Parallel, delayed
 import random
-import multiprocessing
 import time
 from collections import Counter
 
@@ -65,6 +64,7 @@ def run_parallel(olo, cv, cmplt):
 
     plot = PlotTrack()
     plot.plot_records(track_to_plot)
+
 
 def avg_performance(perf_dicts):
     total = sum(map(Counter, perf_dicts), Counter())
