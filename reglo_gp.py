@@ -16,8 +16,9 @@ from reporting import Reporting
 from reboot_model import RebootModel
 
 
-class REGLoGP:
+class REGLoGP(Prediction):
     def __init__(self, exp, data):
+        Prediction.__init__(self)
         self.exp = exp
         self.data = data
         self.tracked_loss = 0
@@ -68,15 +69,15 @@ class REGLoGP:
                     if not self.population.matchset:
                         loss += performance.hamming_loss(label_prediction, test_sample[1])
                     else:
-                        predict = Prediction(self.population.popset, self.population.matchset)
+                        # predict = Prediction(self.population.popset, self.population.matchset)
                         if PREDICTION_METHOD == 1:
-                            label_prediction = predict.max_prediction()
+                            label_prediction = Prediction.max_prediction(self, self.population.popset, self.population.matchset)
                         else:
-                            predict.aggregate_prediction()
+                            Prediction.aggregate_prediction(self, self.population.popset, self.population.matchset)
                             if THRESHOLD == 'OT':
-                                label_prediction, _ = predict.one_threshold()
+                                label_prediction, _ = Prediction.one_threshold(self)
                             elif THRESHOLD == 'RCUT':
-                                label_prediction, _ = predict.rank_cut()
+                                label_prediction, _ = Prediction.rank_cut(self)
                             else:
                                 print("prediction threshold method unidentified!")
                         loss += performance.hamming_loss(label_prediction, test_sample[1])
@@ -123,8 +124,8 @@ class REGLoGP:
     def train_iteration(self, sample):
         self.population.make_matchset(sample[0], sample[1], self.iteration)
         self.timer.start_evaluation()
-        predict = Prediction(self.population.popset, self.population.matchset)
-        label_prediction = predict.max_prediction()
+        # predict = Prediction()
+        label_prediction = Prediction.max_prediction(self, self.population.popset, self.population.matchset)
         self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__()
                               / NO_LABELS)
         self.timer.stop_evaluation()
@@ -159,21 +160,21 @@ class REGLoGP:
             self.population.make_eval_matchset(sample[0])
             label_prediction = set()
             vote = {}
+            # predict = Prediction()
 
             if not self.population.matchset:
                 self.no_match += 1
                 performance.update_example_based(vote, label_prediction, sample[1])
                 performance.update_class_based(label_prediction, sample[1])
             else:
-                predict = Prediction(self.population.popset, self.population.matchset)
                 if PREDICTION_METHOD == 1:
-                    label_prediction = predict.max_prediction()
+                    label_prediction = Prediction.max_prediction(self, self.population.popset, self.population.matchset)
                 else:
-                    predict.aggregate_prediction()
+                    Prediction.aggregate_prediction(self, self.population.popset, self.population.matchset)
                     if THRESHOLD == 'OT':
-                        [label_prediction, vote] = predict.one_threshold()
+                        [label_prediction, vote] = Prediction.one_threshold(self)
                     elif THRESHOLD == 'RCUT':
-                        [label_prediction, vote] = predict.rank_cut()
+                        [label_prediction, vote] = Prediction.rank_cut(self)
                     else:
                         print("prediction threshold method unidentified!")
                 performance.update_example_based(vote, label_prediction, sample[1])
