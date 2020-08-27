@@ -66,11 +66,14 @@ class Performance:
         return prediction.symmetric_difference(target).__len__() / self.label_count
 
     def rank_loss(self, vote, target):
+        if not vote:
+            return 1.0
+
         target_complement = set(range(0, self.label_count)).difference(target)
         loss = 0
         for tc in target_complement:
             for t in target:
-                if vote.get(t, 0) <= vote.get(tc, -1e-5):
+                if vote.get(t, 0) < vote.get(tc, -1e-5):
                     loss += 1
         try:
             return loss / (target.__len__() * target_complement.__len__())
@@ -78,7 +81,10 @@ class Performance:
             return 0.0
 
     def one_error(self, vote, target):
-        labels_max_vote = {max(vote.items(), key=operator.itemgetter(1))[0]}
+        try:
+            labels_max_vote = {max(vote.items(), key=operator.itemgetter(1))[0]}
+        except ValueError:
+            labels_max_vote = set()
         if labels_max_vote.intersection(target).__len__() > 0:
             return 0
         else:

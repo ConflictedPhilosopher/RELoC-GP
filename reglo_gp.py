@@ -62,30 +62,42 @@ class REGLoGP:
 
             def track_performance():
                 loss = 0
+                label_prediction = set()
                 for test_sample in samples_test:
                     self.population.make_eval_matchset(test_sample[0])
                     if not self.population.matchset:
-                        self.no_match += 1
+                        loss += performance.hamming_loss(label_prediction, test_sample[1])
                     else:
                         predict = Prediction(self.population.popset, self.population.matchset)
-                        label_prediction = predict.max_prediction()
+                        if PREDICTION_METHOD == 1:
+                            label_prediction = predict.max_prediction()
+                        else:
+                            predict.aggregate_prediction()
+                            if THRESHOLD == 'OT':
+                                label_prediction, _ = predict.one_threshold()
+                            elif THRESHOLD == 'RCUT':
+                                label_prediction, _ = predict.rank_cut()
+                            else:
+                                print("prediction threshold method unidentified!")
                         loss += performance.hamming_loss(label_prediction, test_sample[1])
-                return loss / samples_test.__len__()
+                return loss/samples_test.__len__()
 
             if (self.iteration % TRACK_FREQ) == 0 and self.iteration > 0:
-                print('Iteration ', self.iteration)
+                # print('Iteration ', self.iteration)
                 self.timer.start_evaluation()
-                if abs(self.tracked_loss/TRACK_FREQ - loss_old) < ERROR:
-                    stop_training = True
-                else:
-                    loss_old = self.tracked_loss/TRACK_FREQ
                 test_loss = track_performance()
                 self.population.pop_average_eval()
                 self.training_track.write(str(self.iteration) + ", " + self.population.get_pop_tracking() + ", "
                                           + str("%.4f" % test_loss) + ", "
                                           + str("%.4f" % self.timer.get_global_timer()) + "\n")
                 self.timer.stop_evaluation()
+
                 self.track_to_plot.append([self.iteration, self.population.ave_loss, test_loss])
+
+                if abs(self.tracked_loss/TRACK_FREQ - loss_old) < ERROR:
+                    stop_training = True
+                else:
+                    loss_old = self.tracked_loss/TRACK_FREQ
                 self.tracked_loss = 0
 
             self.iteration += 1
@@ -99,13 +111,12 @@ class REGLoGP:
         self.timer.stop_evaluation()
 
         reporting = Reporting(self.exp)
+        reporting.write_pop(self.population.popset, self.data.dtypes)
         reporting.write_model_stats(self.population, self.timer, train_evaluation, train_coverage,
                                     test_evaluation, test_coverage)
-        reporting.write_pop(self.population.popset, self.data.dtypes)
         global_time = self.timer.get_global_timer()
 
-        print("Process Time (min):")
-        print(round(global_time, 5))
+        print("Process Time (min): ", round(global_time, 5))
 
         return [test_evaluation, self.track_to_plot]
 
@@ -115,7 +126,7 @@ class REGLoGP:
         predict = Prediction(self.population.popset, self.population.matchset)
         label_prediction = predict.max_prediction()
         self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__()
-                              / self.data.label_count)
+                              / NO_LABELS)
         self.timer.stop_evaluation()
 
         self.population.make_correctset(sample[1])
@@ -130,7 +141,6 @@ class REGLoGP:
         self.population.clear_sets()
 
     def evaluation(self, test=True):
-        self.no_match = 0
         multi_label_perf = dict()
         performance = Performance(self.data.label_count)
         vote_list = []
@@ -147,11 +157,13 @@ class REGLoGP:
 
         def update_performance(sample):
             self.population.make_eval_matchset(sample[0])
-            label_prediction = {}
+            label_prediction = set()
             vote = {}
 
             if not self.population.matchset:
                 self.no_match += 1
+                performance.update_example_based(vote, label_prediction, sample[1])
+                performance.update_class_based(label_prediction, sample[1])
             else:
                 predict = Prediction(self.population.popset, self.population.matchset)
                 if PREDICTION_METHOD == 1:

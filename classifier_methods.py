@@ -47,15 +47,18 @@ class ClassifierMethods:
         return False
 
     def is_more_general(self, classifier1, classifier2):
-        if len(classifier1.specified_atts) > len(classifier2.specified_atts):
+        cl1_attributes = classifier1.specified_atts
+        cl2_attributes = classifier2.specified_atts
+        if cl1_attributes.__len__() > cl2_attributes.__len__():
             return False
-        for ref in classifier1.specified_atts:
-            if ref not in classifier2.specified_atts:
+        for ref in cl1_attributes:
+            if ref not in cl2_attributes:
                 return False
             if self.dtypes[ref] == 1:
-                if classifier1.condition[ref][0] < classifier2.condition[ref][0]:
+                if classifier1.condition[cl1_attributes.index(ref)][0] < \
+                        classifier2.condition[cl2_attributes.index(ref)][0]:
                     return False
-                if classifier1.condition[ref][1] > classifier2.condition[ref][1]:
+                if classifier1.condition[cl1_attributes.index(ref)][1] > classifier2.condition[cl2_attributes.index(ref)][1]:
                     return False
         return True
 

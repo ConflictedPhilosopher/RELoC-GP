@@ -8,25 +8,25 @@
 SEED_NUMBER = 161
 
 DATA_DIR = "D:\Datasets"
-DATA_HEADER = "emotions"
+DATA_HEADER = "scene"
 REPORT_PATH = "report"
-NO_FEATURES = 72
+NO_FEATURES = 294
 NO_LABELS = 6
 GET_MLD_PROP = False
 
-REBOOT_MODEL = 0
-MAX_ITERATION = 3000
-MAX_CLASSIFIER = 1000
-PROB_HASH = 0.5
+REBOOT_MODEL = 1
+MAX_ITERATION = 0
+MAX_CLASSIFIER = 5000
+PROB_HASH = 0.95
 DO_SUBSUMPTION = True
-AVG_COUNT = 1
+AVG_COUNT = 10
 
 PREDICTION_METHOD = 2  # 1: max prediction - 2: aggregated prediction
 THRESHOLD = 'OT'
 THETA = 0.5
 RANK_CUT = 1
 
-K = 2  # number of the label clusters
+K = 2  # number of label clusters
 L_MIN = 2
 
 # ------------------------------------------------------------------------------
@@ -45,4 +45,4 @@ THETA_DEL = 20
 SELECTION = 't'   # 'r': roulette wheel selection - 't': tournament selection
 P_XOVER = 0.8
 P_MUT = 0.04
-THETA_GA = 50
+THETA_GA = 5

@@ -156,13 +156,13 @@ class ClassifierSets:
         if changed0:
             offspring1.set_fitness(FITNESS_RED * (offspring1.fitness + offspring2.fitness)/2)
             offspring2.set_fitness(offspring1.fitness)
-            offspring1.set_loss((1-FITNESS_RED) * (offspring1.loss + offspring2.loss) / 2)
-            offspring2.set_loss(offspring1.loss)
+            # offspring1.set_loss((1-FITNESS_RED) * (offspring1.loss + offspring2.loss) / 2)
+            # offspring2.set_loss(offspring1.loss)
         else:
             offspring1.set_fitness(FITNESS_RED * offspring1.fitness)
             offspring2.set_fitness(FITNESS_RED * offspring2.fitness)
-            offspring1.set_loss((1-FITNESS_RED) * offspring1.loss)
-            offspring2.set_loss((1-FITNESS_RED) * offspring2.loss)
+            # offspring1.set_loss((1-FITNESS_RED) * offspring1.loss)
+            # offspring2.set_loss((1-FITNESS_RED) * offspring2.loss)
 
         if changed0 or changed1 or changed2:
             self.insert_discovered_classifier(offspring1, offspring2, parent1, parent2)
@@ -353,7 +353,7 @@ class ClassifierSets:
         choices = [ref for ref in self.correctset if
                    self.cl_methods.subsumption(self.popset[ref], classifier)]
         if choices:
-            idx = random.randint(choices.__len__())
+            idx = random.randint(0, choices.__len__()-1)
             self.popset[choices[idx]].update_numerosity(1)
             self.micro_pop_size += 1
             return
@@ -391,8 +391,8 @@ class ClassifierSets:
                               for classifier in self.popset])
         loss_sum = sum([classifier.loss for classifier in self.popset])
         try:
-            self.ave_generality = generality_sum / float(self.micro_pop_size)
-            self.ave_loss = loss_sum / float(self.micro_pop_size)
+            self.ave_generality = generality_sum / float(self.popset.__len__())
+            self.ave_loss = loss_sum / float(self.popset.__len__())
         except ZeroDivisionError:
             self.ave_generality = None
             self.ave_loss = None

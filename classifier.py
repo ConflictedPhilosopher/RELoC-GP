@@ -15,7 +15,7 @@ class Classifier:
     def __init__(self):
         self.specified_atts = []
         self.condition = []
-        self.prediction = {}
+        self.prediction = set()
         self.parent_prediction = []
         self.numerosity = 1
         self.match_count = 0
@@ -100,7 +100,8 @@ class Classifier:
             self.ave_matchset_size += BETA * (m_size - self.ave_matchset_size)
 
         # update_loss(target)
-        self.loss += (self.prediction.symmetric_difference(target).__len__() / (float(self.match_count * NO_LABELS)))
+        self.loss += (self.prediction.symmetric_difference(target).__len__() / (float(NO_LABELS)))
+        self.loss /= float(self.match_count)
 
         # update_fitness()
         self.fitness = max(pow(1 - self.loss, NU), INIT_FITNESS)

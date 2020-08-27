@@ -21,7 +21,7 @@ def handle_model(args):
     exp, data, return_dict = args
     model = REGLoGP(exp, data)
     perf, track_to_plot = model.train_model()
-    return_dict[exp] = perf
+    return_dict[exp] = [perf, track_to_plot]
     return [perf, track_to_plot]
 
 
@@ -46,9 +46,6 @@ def run_parallel(olo, cv, cmplt):
     perf = [result[0] for result in results]
     track_to_plot = [result[1] for result in results]
     avg_performance(perf)
-    plot = PlotTrack()
-    plot.plot_records(track_to_plot)
-
 
     # start = time.time()
     # manager = multiprocessing.Manager()
@@ -62,8 +59,12 @@ def run_parallel(olo, cv, cmplt):
     #     process.join()
     # end = time.time()
     # print('multi-processing time ', (end - start)/60)
-    # avg_performance(return_dict.values())
+    # perf = [exp[0] for exp in return_dict.values()]
+    # avg_performance(perf)
+    # track_to_plot = [exp[1] for exp in return_dict.values()]
 
+    plot = PlotTrack()
+    plot.plot_records(track_to_plot)
 
 def avg_performance(perf_dicts):
     total = sum(map(Counter, perf_dicts), Counter())
