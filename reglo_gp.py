@@ -6,6 +6,7 @@
 # ------------------------------------------------------------------------------
 
 import os.path
+import random
 
 from config import *
 from classifier_set import ClassifierSets
@@ -25,15 +26,16 @@ class REGLoGP(Prediction):
         self.no_match = 0
         self.timer = Timer()
         self.track_to_plot = []
+        random.seed(SEED_NUMBER + exp)
 
         if REBOOT_MODEL:
             trained_model = RebootModel(self.exp, self.data.dtypes)
             pop = trained_model.get_model()
-            self.population = ClassifierSets(data.attribute_info, data.dtypes, self.timer, pop)
+            self.population = ClassifierSets(data.attribute_info, data.dtypes, self.timer, random, pop)
             self.population.micro_pop_size = sum([classifier.numerosity for classifier in pop])
             self.population.pop_average_eval()
         else:
-            self.population = ClassifierSets(data.attribute_info, data.dtypes, self.timer)
+            self.population = ClassifierSets(data.attribute_info, data.dtypes, self.timer, random)
 
         self.iteration = 1
         try:
@@ -69,9 +71,8 @@ class REGLoGP(Prediction):
                     if not self.population.matchset:
                         loss += performance.hamming_loss(label_prediction, test_sample[1])
                     else:
-                        # predict = Prediction(self.population.popset, self.population.matchset)
                         if PREDICTION_METHOD == 1:
-                            label_prediction = Prediction.max_prediction(self, self.population.popset, self.population.matchset)
+                            label_prediction = Prediction.max_prediction(self, self.population.popset, self.population.matchset, random.randint)
                         else:
                             Prediction.aggregate_prediction(self, self.population.popset, self.population.matchset)
                             if THRESHOLD == 'OT':
@@ -124,8 +125,8 @@ class REGLoGP(Prediction):
     def train_iteration(self, sample):
         self.population.make_matchset(sample[0], sample[1], self.iteration)
         self.timer.start_evaluation()
-        # predict = Prediction()
-        label_prediction = Prediction.max_prediction(self, self.population.popset, self.population.matchset)
+        label_prediction = Prediction.max_prediction(self, self.population.popset,
+                                                     self.population.matchset, random.randint)
         self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__()
                               / NO_LABELS)
         self.timer.stop_evaluation()
@@ -160,7 +161,6 @@ class REGLoGP(Prediction):
             self.population.make_eval_matchset(sample[0])
             label_prediction = set()
             vote = {}
-            # predict = Prediction()
 
             if not self.population.matchset:
                 self.no_match += 1
@@ -168,7 +168,7 @@ class REGLoGP(Prediction):
                 performance.update_class_based(label_prediction, sample[1])
             else:
                 if PREDICTION_METHOD == 1:
-                    label_prediction = Prediction.max_prediction(self, self.population.popset, self.population.matchset)
+                    label_prediction = Prediction.max_prediction(self, self.population.popset, self.population.matchset, random.randint)
                 else:
                     Prediction.aggregate_prediction(self, self.population.popset, self.population.matchset)
                     if THRESHOLD == 'OT':

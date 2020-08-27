@@ -4,15 +4,13 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
-import random
-
 from classifier_methods import ClassifierMethods
 from classifier import Classifier
 from config import *
 
 
 class ClassifierSets:
-    def __init__(self, attribute_info, dtypes, timer, popset=None):
+    def __init__(self, attribute_info, dtypes, timer, rand_func, popset=None):
         self.popset = []
         self.matchset = []
         self.correctset = []
@@ -24,6 +22,7 @@ class ClassifierSets:
         self.attribute_info = attribute_info
         self.dtypes = dtypes
         self.timer = timer
+        self.random = rand_func
         if popset:
             self.popset = popset
 
@@ -58,7 +57,7 @@ class ClassifierSets:
         if covering:
             new_classifier = Classifier()
             new_classifier.classifier_cover(numerosity_sum + 1, it, state, target,
-                                            self.attribute_info, self.dtypes)
+                                            self.attribute_info, self.dtypes, self.random)
             self.insert_classifier_pop(new_classifier, True)
             self.matchset.append(self.popset.__len__() - 1)
 
@@ -98,7 +97,7 @@ class ClassifierSets:
         delete = self.cl_methods.get_deletion_vote
         vote_list = [delete(cl, ave_fitness) for cl in self.popset]
         vote_sum = sum(vote_list)
-        choice_point = vote_sum * random.random()
+        choice_point = vote_sum * self.random.random()
 
         new_vote_sum = 0.0
         for idx in range(vote_list.__len__()):
@@ -138,7 +137,7 @@ class ClassifierSets:
 
         if self.correctset.__len__() > 1:
             parent1, parent2, offspring1, offspring2 = self.selection(iteration)
-            if random.random() < P_XOVER and not self.cl_methods.is_equal(offspring1, offspring2):
+            if self.random.random() < P_XOVER and not self.cl_methods.is_equal(offspring1, offspring2):
                 offspring1, offspring2, changed0 = self.xover(offspring1, offspring2)
             offspring1.condition, offspring1.specified_atts, changed1 = self.mutate(offspring1, state)
             offspring2.condition, offspring2.specified_atts, changed2 = self.mutate(offspring2, state)
@@ -195,7 +194,7 @@ class ClassifierSets:
         i = 0
         w, v = fitness[0], self.correctset[0]
         while n:
-            x = total * (1 - random.random() ** (1.0 / self.correctset.__len__()))
+            x = total * (1 - self.random.random() ** (1.0 / self.correctset.__len__()))
             total -= x
             while x > w:
                 x -= w
@@ -207,7 +206,7 @@ class ClassifierSets:
 
     def tournament(self, candidates, tsize=5):
         for i in range(candidates.__len__()):
-            candidates = random.sample(candidates, min(candidates.__len__(), tsize))
+            candidates = self.random.sample(candidates, min(candidates.__len__(), tsize))
             yield max(candidates, key=lambda x: x.fitness)
 
     def xover(self, offspring1, offspring2):
@@ -233,7 +232,7 @@ class ClassifierSets:
             idx1 = atts_child1.index(att0)
             idx2 = atts_child2.index(att0)
             if self.dtypes[att0]:  # Continuous attribute
-                choice_key = random.randint(0, 3)
+                choice_key = self.random.randint(0, 3)
                 if choice_key == 0:  # swap min of the range
                     cond_child1[idx1][0], cond_child2[idx2][0] = cond_child2[idx2][0], cond_child1[idx1][0]
                 elif choice_key == 1:  # swap max of the range
@@ -252,9 +251,9 @@ class ClassifierSets:
                 cond_child1[idx1], cond_child2[idx2] = cond_child2[idx2], cond_child1[idx1]
             return True
 
-        changed = [swap1(att) for att in set(atts_child1).difference(set(atts_child2)) if random.random() < 0.5]
-        changed = [swap2(att) for att in set(atts_child2).difference(set(atts_child1)) if random.random() < 0.5]
-        changed = [swap3(att) for att in set(atts_child1).intersection(set(atts_child2)) if random.random() < 0.5]
+        changed = [swap1(att) for att in set(atts_child1).difference(set(atts_child2)) if self.random.random() < 0.5]
+        changed = [swap2(att) for att in set(atts_child2).difference(set(atts_child1)) if self.random.random() < 0.5]
+        changed = [swap3(att) for att in set(atts_child1).intersection(set(atts_child2)) if self.random.random() < 0.5]
 
         offspring1.condition = cond_child1
         offspring1.specified_atts = atts_child1
@@ -270,21 +269,21 @@ class ClassifierSets:
 
         def mutate_single(idx):
             if idx in atts_child:  # attribute specified in classifier condition
-                if random.random() < PROB_HASH:  # remove the specification
+                if self.random.random() < PROB_HASH:  # remove the specification
                     ref_2_cond = atts_child.index(idx)
                     atts_child.remove(idx)
                     cond_child.pop(ref_2_cond)
                     return True
                 elif self.dtypes[idx]:  # continuous attribute
-                    mutate_range = random.random() * float(self.attribute_info[idx][1] -
+                    mutate_range = self.random.random() * float(self.attribute_info[idx][1] -
                                                            self.attribute_info[idx][0]) / 2
-                    if random.random() < 0.5:  # mutate min of the range
-                        if random.random() < 0.5:  # add
+                    if self.random.random() < 0.5:  # mutate min of the range
+                        if self.random.random() < 0.5:  # add
                             cond_child[atts_child.index(idx)][0] += mutate_range
                         else:  # subtract
                             cond_child[atts_child.index(idx)][0] -= mutate_range
                     else:  # mutate max of the range
-                        if random.random() < 0.5:  # add
+                        if self.random.random() < 0.5:  # add
                             cond_child[atts_child.index(idx)][1] += mutate_range
                         else:  # subtract
                             cond_child[atts_child.index(idx)][1] -= mutate_range
@@ -294,10 +293,10 @@ class ClassifierSets:
                     pass
             else:  # attribute not specified in classifier condition
                 atts_child.append(idx)
-                cond_child.append(self.classifier.build_match(state[idx], self.attribute_info[idx], self.dtypes[idx]))
+                cond_child.append(self.classifier.build_match(state[idx], self.attribute_info[idx], self.dtypes[idx], self.random))
                 return True
 
-        changed = [mutate_single(att_idx) for att_idx in range(self.attribute_info.__len__()) if random.random() < P_MUT]
+        changed = [mutate_single(att_idx) for att_idx in range(self.attribute_info.__len__()) if self.random.random() < P_MUT]
         return [cond_child, atts_child, changed]
 
     def insert_classifier_pop(self, classifier, search_matchset=False):
@@ -353,7 +352,7 @@ class ClassifierSets:
         choices = [ref for ref in self.correctset if
                    self.cl_methods.subsumption(self.popset[ref], classifier)]
         if choices:
-            idx = random.randint(0, choices.__len__()-1)
+            idx = self.random.randint(0, choices.__len__()-1)
             self.popset[choices[idx]].update_numerosity(1)
             self.micro_pop_size += 1
             return

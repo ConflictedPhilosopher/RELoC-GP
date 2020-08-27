@@ -4,8 +4,6 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
-
-import random
 from copy import deepcopy
 
 from config import *
@@ -27,20 +25,20 @@ class Classifier:
         self.ga_time = 0
         self.deletion_vote = 0.0
 
-    def classifier_cover(self, set_size, it, state, target, attribute_info, dtypes):
+    def classifier_cover(self, set_size, it, state, target, attribute_info, dtypes, random_func):
         self.ga_time = it
         self.init_time = it
         self.ave_matchset_size = set_size
         self.prediction = target
         for ref, x in enumerate(state):
-            if random.random() < (1 - PROB_HASH):
+            if random_func.random() < (1 - PROB_HASH):
                 self.specified_atts.append(ref)
-                self.condition.append(self.build_match(x, attribute_info[ref], dtypes[ref]))
+                self.condition.append(self.build_match(x, attribute_info[ref], dtypes[ref], random_func))
 
-    def build_match(self, x, att_info, dtype):
+    def build_match(self, x, att_info, dtype, random_func):
         if dtype:
             att_range = att_info[1] - att_info[0]
-            radius = random.randint(25, 50) * 0.01 * (att_range / 2.0)
+            radius = random_func.randint(25, 50) * 0.01 * (att_range / 2.0)
             return [x - radius, x + radius]
         elif not dtype:
             return x
