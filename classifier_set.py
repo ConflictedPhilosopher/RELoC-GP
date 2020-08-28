@@ -9,16 +9,17 @@ from classifier import Classifier
 from config import *
 
 
-class ClassifierSets:
+class ClassifierSets(ClassifierMethods):
     def __init__(self, attribute_info, dtypes, timer, rand_func, popset=None):
+        ClassifierMethods.__init__(self, dtypes)
         self.popset = []
         self.matchset = []
         self.correctset = []
         self.micro_pop_size = 0
         self.ave_generality = 0.0
         self.ave_loss = 0.0
-        self.cl_methods = ClassifierMethods(dtypes)  # Here you can use inheritance instead
-        self.classifier = Classifier()  # Here you can use inheritance
+        # self.cl_methods = ClassifierMethods(dtypes)  # Here you can use inheritance instead
+        self.classifier = Classifier()
         self.attribute_info = attribute_info
         self.dtypes = dtypes
         self.timer = timer
@@ -94,8 +95,8 @@ class ClassifierSets:
     def delete_from_sets(self):
         ave_fitness = sum([classifier.fitness for classifier in self.popset])\
                        / float(self.micro_pop_size)
-        delete = self.cl_methods.get_deletion_vote
-        vote_list = [delete(cl, ave_fitness) for cl in self.popset]
+        delete = ClassifierMethods.get_deletion_vote
+        vote_list = [delete(self, cl, ave_fitness) for cl in self.popset]
         vote_sum = sum(vote_list)
         choice_point = vote_sum * self.random.random()
 
@@ -137,7 +138,7 @@ class ClassifierSets:
 
         if self.correctset.__len__() > 1:
             parent1, parent2, offspring1, offspring2 = self.selection(iteration)
-            if self.random.random() < P_XOVER and not self.cl_methods.is_equal(offspring1, offspring2):
+            if self.random.random() < P_XOVER and not ClassifierMethods.is_equal(self, offspring1, offspring2):
                 offspring1, offspring2, changed0 = self.xover(offspring1, offspring2)
             offspring1.condition, offspring1.specified_atts, changed1 = self.mutate(offspring1, state)
             offspring2.condition, offspring2.specified_atts, changed2 = self.mutate(offspring2, state)
@@ -276,7 +277,7 @@ class ClassifierSets:
                     return True
                 elif self.dtypes[idx]:  # continuous attribute
                     mutate_range = self.random.random() * float(self.attribute_info[idx][1] -
-                                                           self.attribute_info[idx][0]) / 2
+                                                                self.attribute_info[idx][0]) / 2
                     if self.random.random() < 0.5:  # mutate min of the range
                         if self.random.random() < 0.5:  # add
                             cond_child[atts_child.index(idx)][0] += mutate_range
@@ -293,10 +294,12 @@ class ClassifierSets:
                     pass
             else:  # attribute not specified in classifier condition
                 atts_child.append(idx)
-                cond_child.append(self.classifier.build_match(state[idx], self.attribute_info[idx], self.dtypes[idx], self.random))
+                cond_child.append(self.classifier.build_match(state[idx], self.attribute_info[idx],
+                                                              self.dtypes[idx], self.random))
                 return True
 
-        changed = [mutate_single(att_idx) for att_idx in range(self.attribute_info.__len__()) if self.random.random() < P_MUT]
+        changed = [mutate_single(att_idx) for att_idx in range(self.attribute_info.__len__())
+                   if self.random.random() < P_MUT]
         return [cond_child, atts_child, changed]
 
     def insert_classifier_pop(self, classifier, search_matchset=False):
@@ -322,12 +325,12 @@ class ClassifierSets:
     def get_identical(self, classifier, search_matchset=False):
         if search_matchset:
             identical = [self.popset[ref] for ref in self.matchset if
-                         self.cl_methods.is_equal(classifier, self.popset[ref])]
+                         ClassifierMethods.is_equal(self, classifier, self.popset[ref])]
             if identical:
                 return identical[0]
         else:
             identical = [cl for cl in self.popset if
-                         self.cl_methods.is_equal(classifier, cl)]
+                         ClassifierMethods.is_equal(self, classifier, cl)]
             if identical:
                 return identical[0]
         return None
@@ -339,10 +342,10 @@ class ClassifierSets:
 
 # subsumption methods
     def subsume_into_parents(self, offspring, parent1, parent2):
-        if self.cl_methods.subsumption(parent1, offspring):
+        if ClassifierMethods.subsumption(self, parent1, offspring):
             self.micro_pop_size += 1
             parent1.update_numerosity(1)
-        elif self.cl_methods.subsumption(parent2, offspring):
+        elif ClassifierMethods.subsumption(self, parent2, offspring):
             self.micro_pop_size += 1
             parent2.update_numerosity(1)
         else:
@@ -350,7 +353,7 @@ class ClassifierSets:
 
     def subsume_into_correctset(self, classifier):
         choices = [ref for ref in self.correctset if
-                   self.cl_methods.subsumption(self.popset[ref], classifier)]
+                   ClassifierMethods.subsumption(self, self.popset[ref], classifier)]
         if choices:
             idx = self.random.randint(0, choices.__len__()-1)
             self.popset[choices[idx]].update_numerosity(1)
@@ -361,13 +364,13 @@ class ClassifierSets:
     def subsume_correctset(self):
         subsumer = None
         for ref in self.correctset:
-            if self.cl_methods.is_subsumer(self.popset[ref]):
+            if ClassifierMethods.is_subsumer(self, self.popset[ref]):
                 subsumer = self.popset[ref]
                 break
         delete_list = []
         if subsumer:
             delete_list = [ref for ref in self.correctset if
-                           self.cl_methods.is_more_general(subsumer, self.popset[ref])]
+                           ClassifierMethods.is_more_general(self, subsumer, self.popset[ref])]
         for ref in delete_list:
             subsumer.update_numerosity(self.popset[ref].numerosity)
             self.remove_from_pop(ref)

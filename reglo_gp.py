@@ -56,7 +56,7 @@ class REGLoGP(Prediction):
         else:
             samples_training = self.data.data_train_list
             samples_test = self.data.data_test_list
-        performance = Performance(self.data.label_count)
+        performance = Performance()
         stop_training = False
         loss_old = 1.0
         while self.iteration < (MAX_ITERATION + 1) and not stop_training:
@@ -144,7 +144,7 @@ class REGLoGP(Prediction):
 
     def evaluation(self, test=True):
         multi_label_perf = dict()
-        performance = Performance(self.data.label_count)
+        performance = Performance()
         vote_list = []
         if test:
             if self.data.data_valid_folds:
