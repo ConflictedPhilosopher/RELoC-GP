@@ -15,11 +15,11 @@ class ClassifierMethods:
         if classifier.fitness >= ave_fitness * DELTA or classifier.match_count < THETA_DEL:
             classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity
         elif classifier.fitness == INIT_FITNESS:
-            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity * ave_fitness / \
-                                       (INIT_FITNESS / classifier.numerosity)
+            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity**2 * ave_fitness / \
+                                       INIT_FITNESS
         else:
-            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity * ave_fitness / \
-                                       (classifier.fitness / classifier.numerosity)
+            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity**2 * ave_fitness / \
+                                       classifier.fitness
         return classifier.deletion_vote
 
     def is_equal(self, classifier1, classifier2):
