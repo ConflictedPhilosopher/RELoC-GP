@@ -62,7 +62,8 @@ class Prediction:
         try:
             max_vote = max(self.vote.values())
             self.vote = {k: v / max_vote for k, v in self.vote.items()}
-        except ZeroDivisionError:
+        except (ZeroDivisionError, ValueError):
+            print(matchset, self.vote)
             pass
 
     def one_threshold(self):
