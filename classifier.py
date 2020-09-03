@@ -38,7 +38,7 @@ class Classifier:
     def build_match(self, x, att_info, dtype, random_func):
         if dtype:
             att_range = att_info[1] - att_info[0]
-            radius = random_func.randint(15, 85) * 0.01 * (att_range / 2.0)
+            radius = random_func.randint(25, 75) * 0.01 * (att_range / 2.0)
             return [x - radius, x + radius]
         elif not dtype:
             return x
@@ -102,7 +102,8 @@ class Classifier:
         self.loss /= float(self.match_count)
 
         # update_fitness()
-        self.fitness = max(pow(1 - self.loss, NU), INIT_FITNESS)
+        # self.fitness = max(pow(1 - self.loss, NU), INIT_FITNESS)
+        self.fitness = max(float(self.correct_count/self.match_count) ** NU, INIT_FITNESS)
 
     def set_fitness(self, fitness):
         self.fitness = fitness
