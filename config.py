@@ -5,20 +5,20 @@
 #
 # ------------------------------------------------------------------------------
 
-SEED_NUMBER = 161
+SEED_NUMBER = 10
 
 DATA_DIR = "D:\Datasets"
-DATA_HEADER = "nuswide-bow"
+DATA_HEADER = "scene"
 REPORT_PATH = "report"
-NO_FEATURES = 500
-NO_LABELS = 81
+NO_FEATURES = 294
+NO_LABELS = 6
 GET_MLD_PROP = False
 
 REBOOT_MODEL = 0
-MAX_ITERATION = 10000
-MAX_CLASSIFIER = 10000
-PROB_HASH = 0.95
-DO_SUBSUMPTION = True
+MAX_ITERATION = 2500
+MAX_CLASSIFIER = 3000
+PROB_HASH = 0.94
+TRACK_FREQ = 500
 AVG_COUNT = 10
 
 PREDICTION_METHOD = 2  # 1: max prediction - 2: aggregated prediction
@@ -36,13 +36,13 @@ NU = 1
 THETA_SUB = 200
 LOSS_SUB = 0.01
 BETA = 0.1
-TRACK_FREQ = 1000
-ERROR = 1e-3
+ERROR = 1e-2
 DELTA = 0.1
 THETA_DEL = 20
+DO_SUBSUMPTION = True
 
 # GA parameters
 SELECTION = 't'   # 'r': roulette wheel selection - 't': tournament selection
 P_XOVER = 0.8
 P_MUT = 0.04
-THETA_GA = 5
+THETA_GA = 50
