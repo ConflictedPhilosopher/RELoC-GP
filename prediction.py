@@ -42,7 +42,7 @@ class Prediction:
                 [self.prediction.add(label) for label in candidate_lp[0]]
         else:
             [self.prediction.add(label) for label in candidate_lp[0]]
-        return [self.prediction, None]
+        return self.prediction
 
     def aggregate_prediction(self, popset, matchset):
         self.prediction = set()
@@ -68,12 +68,12 @@ class Prediction:
         except (ZeroDivisionError, ValueError):
             pass
 
-    def one_threshold(self, popset, matchset, *rng):
+    def one_threshold(self, popset, matchset):
         self.aggregate_prediction(popset, matchset)
         [self.prediction.add(label) for label in self.vote.keys() if self.vote[label] >= THETA]
         return [self.prediction, self.vote]
 
-    def rank_cut(self, popset, matchset, *rng):
+    def rank_cut(self, popset, matchset):
         self.aggregate_prediction(popset, matchset)
         labels_sorted = list(
             {k: v for k, v in sorted(self.vote.items(), key=lambda item: item[1], reverse=True)}.keys())

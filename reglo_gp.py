@@ -47,7 +47,7 @@ class REGLoGP(Prediction):
             raise
         else:
             self.training_track.write("iteration, macroPop, microPop, aveLoss, "
-                                      "aveGenerality, testLoss, time(min)\n")
+                                      "aveGenerality, testFscore, time(min)\n")
 
     def train_model(self):
         if self.data.data_train_folds:
@@ -64,36 +64,39 @@ class REGLoGP(Prediction):
             self.train_iteration(sample)
 
             def track_performance():
-                loss = 0
+                fscore = 0
                 label_prediction = set()
-                predictor = Prediction.one_threshold
-                if PREDICTION_METHOD == 1:
-                    predictor = Prediction.max_prediction
-                else:
-                    if THRESHOLD == 2:
-                        predictor = Prediction.rank_cut
 
                 for test_sample in samples_test:
                     self.population.make_eval_matchset(test_sample[0])
                     if not self.population.matchset:
-                        loss += performance.hamming_loss(label_prediction, test_sample[1])
+                        fscore += performance.fscore(label_prediction, test_sample[1])
                     else:
-                        label_prediction, _ = predictor(self, self.population.popset,
-                                                        self.population.matchset, random.randint)
-                        loss += performance.hamming_loss(label_prediction, test_sample[1])
-                return loss/samples_test.__len__()
+                        if PREDICTION_METHOD == 1:
+                            label_prediction = Prediction.max_prediction(self, self.population.popset,
+                                                                         self.population.matchset, random.randint)
+                        else:
+                            if THRESHOLD == 1:
+                                label_prediction, _ = Prediction.one_threshold(self, self.population.popset, self.population.matchset)
+                            elif THRESHOLD == 2:
+                                label_prediction, _ = Prediction.rank_cut(self, self.population.popset, self.population.matchset)
+                            else:
+                                print("prediction threshold method unidentified!")
+
+                        fscore += performance.fscore(label_prediction, test_sample[1])
+                return fscore/samples_test.__len__()
 
             if (self.iteration % TRACK_FREQ) == 0 and self.iteration > 0:
                 # print('Iteration ', self.iteration)
                 self.timer.start_evaluation()
-                test_loss = track_performance()
+                test_fscore = track_performance()
                 self.population.pop_average_eval()
                 self.training_track.write(str(self.iteration) + ", " + self.population.get_pop_tracking() + ", "
-                                          + str("%.4f" % test_loss) + ", "
+                                          + str("%.4f" % test_fscore) + ", "
                                           + str("%.4f" % self.timer.get_global_timer()) + "\n")
                 self.timer.stop_evaluation()
 
-                self.track_to_plot.append([self.iteration, self.population.ave_loss, test_loss])
+                self.track_to_plot.append([self.iteration, self.population.ave_loss, test_fscore])
 
                 if float(self.tracked_loss/TRACK_FREQ) - loss_old > 0.1:
                     stop_training = True
@@ -124,7 +127,7 @@ class REGLoGP(Prediction):
     def train_iteration(self, sample):
         self.population.make_matchset(sample[0], sample[1], self.iteration)
         self.timer.start_evaluation()
-        label_prediction, _ = Prediction.max_prediction(self, self.population.popset,
+        label_prediction = Prediction.max_prediction(self, self.population.popset,
                                                      self.population.matchset, random.randint)
         self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__()
                               / NO_LABELS)
@@ -145,12 +148,6 @@ class REGLoGP(Prediction):
         multi_label_perf = dict()
         performance = Performance()
         vote_list = []
-        predictor = Prediction.one_threshold
-        if PREDICTION_METHOD == 1:
-            predictor = Prediction.max_prediction
-        else:
-            if THRESHOLD == 2:
-                predictor = Prediction.rank_cut
 
         if test:
             if self.data.data_valid_folds:
@@ -173,8 +170,17 @@ class REGLoGP(Prediction):
                 performance.update_example_based(vote, label_prediction, sample[1])
                 performance.update_class_based(label_prediction, sample[1])
             else:
-                label_prediction, vote = predictor(self, self.population.popset,
-                                                   self.population.matchset, random.randint)
+                if PREDICTION_METHOD == 1:
+                    label_prediction = Prediction.max_prediction(self, self.population.popset, self.population.matchset,
+                                                                 random.randint)
+                else:
+                    if THRESHOLD == 1:
+                        label_prediction, vote = Prediction.one_threshold(self, self.population.popset, self.population.matchset)
+                    elif THRESHOLD == 2:
+                        label_prediction, vote = Prediction.rank_cut(self, self.population.popset, self.population.matchset)
+                    else:
+                        print("prediction threshold method unidentified!")
+
                 performance.update_example_based(vote, label_prediction, sample[1])
                 performance.update_class_based(label_prediction, sample[1])
             vote_list.append(vote)

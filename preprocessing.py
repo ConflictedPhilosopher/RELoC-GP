@@ -69,13 +69,17 @@ class Preprocessing:
 # load data (.csv)
     def load_data(self, path):
         try:
+            drop_index = []
             data = pd.read_csv(path)
             label_set_list = []
             for idx, row in data.iterrows():
                 label = [int(l) for l in row[NO_FEATURES:]]
                 label_set = set([idx for idx, val in enumerate(label) if val == 1])
                 label_set_list.append(label_set)
+                if label_set.__len__() < 1:
+                    drop_index.append(idx)
             data['labelset'] = label_set_list
+            data.drop(drop_index, axis=0, inplace=True)
             return data
         except FileNotFoundError as fnferror:
             print(fnferror)
@@ -160,7 +164,7 @@ class Preprocessing:
 # format data
     def format_data(self, data):
         data_list = []
-        data.sample(frac=1.0, random_state=SEED_NUMBER)
+        # data.sample(frac=1.0, random_state=SEED_NUMBER)
         for idx, row in data.iterrows():
             data_list.append([list(row[:NO_FEATURES]), row[-1]])
         return data_list
