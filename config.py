@@ -12,7 +12,7 @@ DATA_HEADER = "scene"
 REPORT_PATH = "report"
 NO_FEATURES = 294
 NO_LABELS = 6
-GET_MLD_PROP = False
+GET_MLD_PROP = True
 
 REBOOT_MODEL = 0
 MAX_ITERATION = 2500
@@ -22,7 +22,7 @@ TRACK_FREQ = 500
 AVG_COUNT = 10
 
 PREDICTION_METHOD = 2  # 1: max prediction - 2: aggregated prediction
-THRESHOLD = 'OT'
+THRESHOLD = 1  # 1: score-based one-threshold - 2: rank-based rank-cut
 THETA = 0.5
 RANK_CUT = 1
 

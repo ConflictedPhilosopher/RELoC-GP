@@ -66,21 +66,20 @@ class REGLoGP(Prediction):
             def track_performance():
                 loss = 0
                 label_prediction = set()
+                predictor = Prediction.one_threshold
+                if PREDICTION_METHOD == 1:
+                    predictor = Prediction.max_prediction
+                else:
+                    if THRESHOLD == 2:
+                        predictor = Prediction.rank_cut
+
                 for test_sample in samples_test:
                     self.population.make_eval_matchset(test_sample[0])
                     if not self.population.matchset:
                         loss += performance.hamming_loss(label_prediction, test_sample[1])
                     else:
-                        if PREDICTION_METHOD == 1:
-                            label_prediction = Prediction.max_prediction(self, self.population.popset, self.population.matchset, random.randint)
-                        else:
-                            Prediction.aggregate_prediction(self, self.population.popset, self.population.matchset)
-                            if THRESHOLD == 'OT':
-                                label_prediction, _ = Prediction.one_threshold(self)
-                            elif THRESHOLD == 'RCUT':
-                                label_prediction, _ = Prediction.rank_cut(self)
-                            else:
-                                print("prediction threshold method unidentified!")
+                        label_prediction, _ = predictor(self, self.population.popset,
+                                                        self.population.matchset, random.randint)
                         loss += performance.hamming_loss(label_prediction, test_sample[1])
                 return loss/samples_test.__len__()
 
@@ -125,7 +124,7 @@ class REGLoGP(Prediction):
     def train_iteration(self, sample):
         self.population.make_matchset(sample[0], sample[1], self.iteration)
         self.timer.start_evaluation()
-        label_prediction = Prediction.max_prediction(self, self.population.popset,
+        label_prediction, _ = Prediction.max_prediction(self, self.population.popset,
                                                      self.population.matchset, random.randint)
         self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__()
                               / NO_LABELS)
@@ -146,6 +145,13 @@ class REGLoGP(Prediction):
         multi_label_perf = dict()
         performance = Performance()
         vote_list = []
+        predictor = Prediction.one_threshold
+        if PREDICTION_METHOD == 1:
+            predictor = Prediction.max_prediction
+        else:
+            if THRESHOLD == 2:
+                predictor = Prediction.rank_cut
+
         if test:
             if self.data.data_valid_folds:
                 samples = self.data.data_valid_folds[self.exp]
@@ -167,16 +173,8 @@ class REGLoGP(Prediction):
                 performance.update_example_based(vote, label_prediction, sample[1])
                 performance.update_class_based(label_prediction, sample[1])
             else:
-                if PREDICTION_METHOD == 1:
-                    label_prediction = Prediction.max_prediction(self, self.population.popset, self.population.matchset, random.randint)
-                else:
-                    Prediction.aggregate_prediction(self, self.population.popset, self.population.matchset)
-                    if THRESHOLD == 'OT':
-                        [label_prediction, vote] = Prediction.one_threshold(self)
-                    elif THRESHOLD == 'RCUT':
-                        [label_prediction, vote] = Prediction.rank_cut(self)
-                    else:
-                        print("prediction threshold method unidentified!")
+                label_prediction, vote = predictor(self, self.population.popset,
+                                                   self.population.matchset, random.randint)
                 performance.update_example_based(vote, label_prediction, sample[1])
                 performance.update_class_based(label_prediction, sample[1])
             vote_list.append(vote)

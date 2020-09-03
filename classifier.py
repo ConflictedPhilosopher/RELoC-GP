@@ -30,10 +30,13 @@ class Classifier:
         self.init_time = it
         self.ave_matchset_size = set_size
         self.prediction = target
-        for ref, x in enumerate(state):
-            if random_func.random() < (1 - PROB_HASH):
-                self.specified_atts.append(ref)
-                self.condition.append(self.build_match(x, attribute_info[ref], dtypes[ref], random_func))
+        og = True
+        while og:
+            for ref, x in enumerate(state):
+                if random_func.random() < (1 - PROB_HASH):
+                    self.specified_atts.append(ref)
+                    self.condition.append(self.build_match(x, attribute_info[ref], dtypes[ref], random_func))
+                    og = False
 
     def build_match(self, x, att_info, dtype, random_func):
         if dtype:

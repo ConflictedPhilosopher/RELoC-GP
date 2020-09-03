@@ -124,6 +124,14 @@ class Preprocessing:
         temp = [(val - self.imbalance_mean)**2 for val in imbalance_label]
         imbalance_label_sigma = sqrt(sum(temp) / (self.label_count - 1))
         self.cvir = imbalance_label_sigma / self.imbalance_mean
+        self.print_mldp()
+
+    def print_mldp(self):
+        print('Multi-label data stats:')
+        print('Training/Test samples: {} / {}'.format(self.data_train_count, self.data_test_count))
+        print('Lcard: %.4f' % self.card)
+        print('Ldens: %.4f' % self.density)
+
 
 # train-test split
     def train_test_split(self, data_complete):
@@ -152,7 +160,7 @@ class Preprocessing:
 # format data
     def format_data(self, data):
         data_list = []
-        # data.sample(frac=1.0, random_state=SEED_NUMBER)
+        data.sample(frac=1.0, random_state=SEED_NUMBER)
         for idx, row in data.iterrows():
             data_list.append([list(row[:NO_FEATURES]), row[-1]])
         return data_list
