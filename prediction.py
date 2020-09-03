@@ -51,19 +51,21 @@ class Prediction:
         predicted_labels = set().union(*[popset[ref].prediction for ref
                                          in matchset])
         self.vote = dict.fromkeys(predicted_labels)
+        numerosity = dict.fromkeys(predicted_labels)
 
         def update_value(label, ref):
             if self.vote[label]:
-                self.vote[label] += (1 - popset[ref].loss) * popset[ref].numerosity
+                self.vote[label] += popset[ref].fitness * popset[ref].numerosity
+                numerosity[label] += popset[ref].numerosity
             else:
-                self.vote[label] = (1 - popset[ref].loss) * popset[ref].numerosity
+                self.vote[label] = popset[ref].fitness * popset[ref].numerosity
+                numerosity[label] = popset[ref].numerosity
 
         [update_value(label, ref) for ref in matchset for label in popset[ref].prediction]
         try:
-            max_vote = max(self.vote.values())
-            self.vote = {k: v / max_vote for k, v in self.vote.items()}
+            # max_vote = max(self.vote.values())
+            self.vote = {k: v / numerosity[k] for k, v in self.vote.items()}
         except (ZeroDivisionError, ValueError):
-            print(matchset, self.vote)
             pass
 
     def one_threshold(self):

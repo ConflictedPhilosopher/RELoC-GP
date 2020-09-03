@@ -386,8 +386,8 @@ class ClassifierSets(ClassifierMethods):
 # update sets
     def update_sets(self, target):
         m_size = sum([self.popset[ref].numerosity for ref in self.matchset])
-        [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
         [self.popset[ref].update_correct() for ref in self.correctset]
+        [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
 
     def clear_sets(self):
         self.matchset = []
