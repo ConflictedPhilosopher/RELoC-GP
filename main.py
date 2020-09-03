@@ -46,22 +46,6 @@ def run_parallel(olo, cv, cmplt):
     track_to_plot = [result[1] for result in results]
     avg_performance(perf)
 
-    # start = time.time()
-    # manager = multiprocessing.Manager()
-    # return_dict = manager.dict()
-    # jobs = []
-    # for i in range(n_jobs):
-    #     p = multiprocessing.Process(target=handle_model, args=(i, data, return_dict))
-    #     jobs.append(p)
-    #     p.start()
-    # for process in jobs:
-    #     process.join()
-    # end = time.time()
-    # print('multi-processing time ', (end - start)/60)
-    # perf = [exp[0] for exp in return_dict.values()]
-    # avg_performance(perf)
-    # track_to_plot = [exp[1] for exp in return_dict.values()]
-
     plot = PlotTrack()
     plot.plot_records(track_to_plot)
 

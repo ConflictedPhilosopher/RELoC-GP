@@ -102,7 +102,8 @@ class Classifier:
         self.loss /= float(self.match_count)
 
         # update_fitness()
-        self.fitness = max(pow(1 - self.loss, NU), INIT_FITNESS)
+        # self.fitness = max(pow(1 - self.loss, NU), INIT_FITNESS)
+        self.fitness = max(float(self.correct_count/self.match_count) ** NU, INIT_FITNESS)
 
     def set_fitness(self, fitness):
         self.fitness = fitness

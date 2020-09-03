@@ -4,9 +4,34 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+import math
+
 from classifier_methods import ClassifierMethods
 from classifier import Classifier
 from config import *
+
+
+def match(classifier, state, dtypes):
+    for idx, ref in enumerate(classifier.specified_atts):
+        x = state[ref]
+        if dtypes[ref]:
+            if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
+                pass
+            else:
+                return False
+        else:
+            if x == classifier.condition[idx]:
+                pass
+            else:
+                return False
+    return True
+
+
+def distance(classifier, state):
+    center = [(att[1] + att[0]) / 2 for att in classifier.condition]
+    d = math.sqrt(sum([(state[att] - center[idx])**2 for (idx, att)
+                       in enumerate(classifier.specified_atts)]))
+    return d / classifier.specified_atts.__len__()
 
 
 class ClassifierSets(ClassifierMethods):
@@ -24,31 +49,22 @@ class ClassifierSets(ClassifierMethods):
         self.dtypes = dtypes
         self.timer = timer
         self.random = rand_func
+        self.k = 5
         if popset:
             self.popset = popset
 
     def make_matchset(self, state, target, it):
-
-        def match(classifier, state0):
-            for idx, ref in enumerate(classifier.specified_atts):
-                x = state0[ref]
-                if self.dtypes[ref]:
-                    if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
-                        pass
-                    else:
-                        return False
-                else:
-                    if x == classifier.condition[idx]:
-                        pass
-                    else:
-                        return False
-            return True
-
         self.timer.start_matching()
         covering = True
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
-                         match(classifier, state)]
+                         match(classifier, state, self.dtypes)]
+        if self.matchset.__len__() > self.k:
+            d = [distance(self.popset[idx], state) for idx in self.matchset]
+            d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
+            knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
+            self.matchset = knn_matchset
         self.timer.stop_matching()
+
         numerosity_sum = sum([self.popset[ind].numerosity for ind in self.matchset])
         for ind in self.matchset:
             if self.popset[ind].prediction == target:
@@ -63,24 +79,14 @@ class ClassifierSets(ClassifierMethods):
             self.matchset.append(self.popset.__len__() - 1)
 
     def make_eval_matchset(self, state):
-
-        def match(classifier, state0):
-            for idx, ref in enumerate(classifier.specified_atts):
-                x = state0[ref]
-                if self.dtypes[ref]:
-                    if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
-                        pass
-                    else:
-                        return False
-                else:
-                    if x == classifier.condition[idx]:
-                        pass
-                    else:
-                        return False
-            return True
-
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
-                         match(classifier, state)]
+                         match(classifier, state, self.dtypes)]
+
+        if self.matchset.__len__() > self.k:
+            d = [distance(self.popset[idx], state) for idx in self.matchset]
+            d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
+            knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
+            self.matchset = knn_matchset
 
     def make_correctset(self, target):
         self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
@@ -93,10 +99,10 @@ class ClassifierSets(ClassifierMethods):
         self.timer.stop_deletion()
 
     def delete_from_sets(self):
-        ave_fitness = sum([classifier.fitness for classifier in self.popset])\
+        ave_fitness = sum([classifier.fitness * classifier.numerosity for classifier in self.popset])\
                        / float(self.micro_pop_size)
-        delete = ClassifierMethods.get_deletion_vote
-        vote_list = [delete(self, cl, ave_fitness) for cl in self.popset]
+        deletion_vote = ClassifierMethods.get_deletion_vote
+        vote_list = [deletion_vote(self, cl, ave_fitness) for cl in self.popset]
         vote_sum = sum(vote_list)
         choice_point = vote_sum * self.random.random()
 
@@ -380,8 +386,8 @@ class ClassifierSets(ClassifierMethods):
 # update sets
     def update_sets(self, target):
         m_size = sum([self.popset[ref].numerosity for ref in self.matchset])
-        [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
         [self.popset[ref].update_correct() for ref in self.correctset]
+        [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
 
     def clear_sets(self):
         self.matchset = []

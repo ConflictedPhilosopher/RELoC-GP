@@ -96,7 +96,7 @@ class REGLoGP(Prediction):
 
                 self.track_to_plot.append([self.iteration, self.population.ave_loss, test_loss])
 
-                if abs(self.tracked_loss/TRACK_FREQ - loss_old) < ERROR:
+                if float(self.tracked_loss/TRACK_FREQ) - loss_old > 0.1:
                     stop_training = True
                 else:
                     loss_old = self.tracked_loss/TRACK_FREQ
