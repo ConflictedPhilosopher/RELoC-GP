@@ -31,11 +31,11 @@ class REGLoGP(Prediction):
         if REBOOT_MODEL:
             trained_model = RebootModel(self.exp, self.data.dtypes)
             pop = trained_model.get_model()
-            self.population = ClassifierSets(data.attribute_info, data.dtypes, self.timer, random, pop)
+            self.population = ClassifierSets(data.attribute_info, data.dtypes, random, pop)
             self.population.micro_pop_size = sum([classifier.numerosity for classifier in pop])
             self.population.pop_average_eval()
         else:
-            self.population = ClassifierSets(data.attribute_info, data.dtypes, self.timer, random)
+            self.population = ClassifierSets(data.attribute_info, data.dtypes, random)
 
         self.iteration = 1
         try:
@@ -125,23 +125,31 @@ class REGLoGP(Prediction):
         return [test_evaluation, self.track_to_plot]
 
     def train_iteration(self, sample):
+        self.timer.start_matching()
         self.population.make_matchset(sample[0], sample[1], self.iteration)
-        self.timer.start_evaluation()
+        self.timer.stop_matching()
+
         label_prediction = Prediction.max_prediction(self, self.population.popset,
                                                      self.population.matchset, random.randint)
         self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__()
                               / NO_LABELS)
-        self.timer.stop_evaluation()
 
         self.population.make_correctset(sample[1])
         self.population.update_sets(sample[1])
+
+        if DO_SUBSUMPTION:
+            self.timer.start_subsumption()
+            self.population.subsume_correctset()
+            self.timer.stop_subsumption()
 
         if (self.iteration - self.population.get_time_average()) > THETA_GA:
             popset = self.population.popset
             [popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
             self.population.apply_ga(self.iteration, sample[0])
 
+        self.timer.start_deletion()
         self.population.deletion()
+        self.timer.stop_deletion()
         self.population.clear_sets()
 
     def evaluation(self, test=True):

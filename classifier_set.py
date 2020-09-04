@@ -35,7 +35,7 @@ def distance(classifier, state):
 
 
 class ClassifierSets(ClassifierMethods):
-    def __init__(self, attribute_info, dtypes, timer, rand_func, popset=None):
+    def __init__(self, attribute_info, dtypes, rand_func, popset=None):
         ClassifierMethods.__init__(self, dtypes)
         self.popset = []
         self.matchset = []
@@ -47,14 +47,12 @@ class ClassifierSets(ClassifierMethods):
         self.classifier = Classifier()
         self.attribute_info = attribute_info
         self.dtypes = dtypes
-        self.timer = timer
         self.random = rand_func
         self.k = 5
         if popset:
             self.popset = popset
 
     def make_matchset(self, state, target, it):
-        self.timer.start_matching()
         covering = True
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
                          match(classifier, state, self.dtypes)]
@@ -63,7 +61,6 @@ class ClassifierSets(ClassifierMethods):
             d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
             knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
             self.matchset = knn_matchset
-        self.timer.stop_matching()
 
         numerosity_sum = sum([self.popset[ind].numerosity for ind in self.matchset])
         for ind in self.matchset:
@@ -93,10 +90,8 @@ class ClassifierSets(ClassifierMethods):
 
 # deletion methods
     def deletion(self):
-        self.timer.start_deletion()
         while self.micro_pop_size > MAX_CLASSIFIER:
             self.delete_from_sets()
-        self.timer.stop_deletion()
 
     def delete_from_sets(self):
         ave_fitness = sum([classifier.fitness * classifier.numerosity for classifier in self.popset])\
@@ -318,12 +313,10 @@ class ClassifierSets(ClassifierMethods):
 
     def insert_discovered_classifier(self, offspring1, offspring2, parent1, parent2):
         if DO_SUBSUMPTION:
-            self.timer.start_subsumption()
             if offspring1.specified_atts.__len__() > 0:
                 self.subsume_into_parents(offspring1, parent1, parent2)
             if offspring2.specified_atts.__len__() > 0:
                 self.subsume_into_parents(offspring2, parent1, parent2)
-            self.timer.stop_subsumption()
         else:
             self.insert_classifier_pop(offspring1)
             self.insert_classifier_pop(offspring2)
@@ -368,20 +361,26 @@ class ClassifierSets(ClassifierMethods):
         self.insert_classifier_pop(classifier)
 
     def subsume_correctset(self):
-        subsumer = None
-        for ref in self.correctset:
-            if ClassifierMethods.is_subsumer(self, self.popset[ref]):
-                subsumer = self.popset[ref]
-                break
-        delete_list = []
-        if subsumer:
-            delete_list = [ref for ref in self.correctset if
-                           ClassifierMethods.is_more_general(self, subsumer, self.popset[ref])]
-        for ref in delete_list:
-            subsumer.update_numerosity(self.popset[ref].numerosity)
-            self.remove_from_pop(ref)
-            self.remove_from_matchset(ref)
-            self.remove_from_correctset(ref)
+        if self.correctset.__len__() > 1:
+            subsumer = None
+            compare_list = self.correctset.copy()
+            for ref in self.correctset:
+                if ClassifierMethods.is_subsumer(self, self.popset[ref]):
+                    subsumer = self.popset[ref]
+                    compare_list = compare_list.remove(ref)
+                    break
+
+            delete_list = []
+            if subsumer and compare_list:
+                delete_list = [ref for ref in compare_list if
+                               ClassifierMethods.is_more_general(self, subsumer, self.popset[ref])]
+            for ref in delete_list:
+                subsumer.update_numerosity(self.popset[ref].numerosity)
+                self.remove_from_pop(ref)
+                self.remove_from_matchset(ref)
+                self.remove_from_correctset(ref)
+            else:
+                return
 
 # update sets
     def update_sets(self, target):
