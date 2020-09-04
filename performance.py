@@ -89,6 +89,15 @@ class Performance:
         else:
             return 1.0
 
+    def coverage(self, vote, target):
+        ranking = {k: v for k, v in sorted(vote.items(), key=lambda item: item[1], reverse=True)}
+        target_ranks = {}
+        for l in target:
+            target_ranks[l] = ranking.get(5)
+
+        print(2)
+
+
     def update_example_based(self, vote, prediction, target):
         self.exact_match_example += self.exact_match(prediction, target)
         self.hamming_loss_example += self.hamming_loss(prediction, target)
@@ -96,9 +105,10 @@ class Performance:
         self.recall_example += self.recall(prediction, target)
         self.fscore_example += self.fscore(prediction, target)
         self.accuracy_example += self.accuracy(prediction, target)
-        if PREDICTION_METHOD is not 'max':
+        if PREDICTION_METHOD == 2:
             self.one_error_example += self.one_error(vote, target)
             self.rank_loss_example += self.rank_loss(vote, target)
+            # self.coverage(vote, target)
 
     def update_class_based(self, prediction, target):
         tp = target.intersection(prediction)

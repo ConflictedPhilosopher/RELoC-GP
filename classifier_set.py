@@ -43,7 +43,6 @@ class ClassifierSets(ClassifierMethods):
         self.micro_pop_size = 0
         self.ave_generality = 0.0
         self.ave_loss = 0.0
-        # self.cl_methods = ClassifierMethods(dtypes)  # Here you can use inheritance instead
         self.classifier = Classifier()
         self.attribute_info = attribute_info
         self.dtypes = dtypes

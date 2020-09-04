@@ -143,9 +143,11 @@ class REGLoGP(Prediction):
             self.timer.stop_subsumption()
 
         if (self.iteration - self.population.get_time_average()) > THETA_GA:
+            self.timer.start_selection()
             popset = self.population.popset
             [popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
             self.population.apply_ga(self.iteration, sample[0])
+            self.timer.stop_selection()
 
         self.timer.start_deletion()
         self.population.deletion()
