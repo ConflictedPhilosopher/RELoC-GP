@@ -91,12 +91,12 @@ class Performance:
 
     def coverage(self, vote, target):
         ranking = {k: v for k, v in sorted(vote.items(), key=lambda item: item[1], reverse=True)}
+        prediction_ranks = list(ranking.values())
         target_ranks = {}
         for l in target:
-            target_ranks[l] = ranking.get(5)
+            target_ranks[l] = prediction_ranks.index(ranking.get(l, ))
 
         print(2)
-
 
     def update_example_based(self, vote, prediction, target):
         self.exact_match_example += self.exact_match(prediction, target)
