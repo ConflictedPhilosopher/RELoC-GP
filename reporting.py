@@ -10,7 +10,7 @@ from config import *
 from classifier_methods import ClassifierMethods
 
 
-class Reporting:
+class Reporting():
     def __init__(self, exp):
         self.exp = exp
 

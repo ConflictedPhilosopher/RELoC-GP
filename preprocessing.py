@@ -69,13 +69,17 @@ class Preprocessing:
 # load data (.csv)
     def load_data(self, path):
         try:
+            drop_index = []
             data = pd.read_csv(path)
             label_set_list = []
             for idx, row in data.iterrows():
                 label = [int(l) for l in row[NO_FEATURES:]]
                 label_set = set([idx for idx, val in enumerate(label) if val == 1])
                 label_set_list.append(label_set)
+                if label_set.__len__() < 1:
+                    drop_index.append(idx)
             data['labelset'] = label_set_list
+            data.drop(drop_index, axis=0, inplace=True)
             return data
         except FileNotFoundError as fnferror:
             print(fnferror)
@@ -124,6 +128,14 @@ class Preprocessing:
         temp = [(val - self.imbalance_mean)**2 for val in imbalance_label]
         imbalance_label_sigma = sqrt(sum(temp) / (self.label_count - 1))
         self.cvir = imbalance_label_sigma / self.imbalance_mean
+        self.print_mldp()
+
+    def print_mldp(self):
+        print('Multi-label data stats:')
+        print('Training/Test samples: {} / {}'.format(self.data_train_count, self.data_test_count))
+        print('Lcard: %.4f' % self.card)
+        print('Ldens: %.4f' % self.density)
+
 
 # train-test split
     def train_test_split(self, data_complete):

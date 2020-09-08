@@ -4,7 +4,7 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
-import random
+import math
 
 from classifier_methods import ClassifierMethods
 from classifier import Classifier
@@ -12,8 +12,32 @@ from graph_partitioning import GraphPart
 from config import *
 
 
-class ClassifierSets(GraphPart):
-    def __init__(self, attribute_info, dtypes, timer, popset=None):
+def match(classifier, state, dtypes):
+    for idx, ref in enumerate(classifier.specified_atts):
+        x = state[ref]
+        if dtypes[ref]:
+            if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
+                pass
+            else:
+                return False
+        else:
+            if x == classifier.condition[idx]:
+                pass
+            else:
+                return False
+    return True
+
+
+def distance(classifier, state):
+    center = [(att[1] + att[0]) / 2 for att in classifier.condition]
+    d = math.sqrt(sum([(state[att] - center[idx])**2 for (idx, att)
+                       in enumerate(classifier.specified_atts)]))
+    return d / classifier.specified_atts.__len__()
+
+
+class ClassifierSets(ClassifierMethods, GraphPart):
+    def __init__(self, attribute_info, dtypes, rand_func, popset=None):
+        ClassifierMethods.__init__(self, dtypes)
         GraphPart.__init__(self)
         self.popset = []
         self.matchset = []
@@ -21,36 +45,24 @@ class ClassifierSets(GraphPart):
         self.micro_pop_size = 0
         self.ave_generality = 0.0
         self.ave_loss = 0.0
-        self.cl_methods = ClassifierMethods(dtypes)  # Here you can use inheritance instead
-        self.classifier = Classifier()  # Here you can use inheritance
+        self.classifier = Classifier()
         self.attribute_info = attribute_info
         self.dtypes = dtypes
-        self.timer = timer
+        self.random = rand_func
+        self.k = 5
         if popset:
             self.popset = popset
 
     def make_matchset(self, state, target, it):
-
-        def match(classifier, state0):
-            for idx, ref in enumerate(classifier.specified_atts):
-                x = state0[ref]
-                if self.dtypes[ref]:
-                    if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
-                        pass
-                    else:
-                        return False
-                else:
-                    if x == classifier.condition[idx]:
-                        pass
-                    else:
-                        return False
-            return True
-
-        self.timer.start_matching()
         covering = True
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
-                         match(classifier, state)]
-        self.timer.stop_matching()
+                         match(classifier, state, self.dtypes)]
+        if self.matchset.__len__() > self.k:
+            d = [distance(self.popset[idx], state) for idx in self.matchset]
+            d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
+            knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
+            self.matchset = knn_matchset
+
         numerosity_sum = sum([self.popset[ind].numerosity for ind in self.matchset])
         for ind in self.matchset:
             if self.popset[ind].prediction == target:
@@ -60,29 +72,19 @@ class ClassifierSets(GraphPart):
         if covering:
             new_classifier = Classifier()
             new_classifier.classifier_cover(numerosity_sum + 1, it, state, target,
-                                            self.attribute_info, self.dtypes)
+                                            self.attribute_info, self.dtypes, self.random)
             self.insert_classifier_pop(new_classifier, True)
             self.matchset.append(self.popset.__len__() - 1)
 
     def make_eval_matchset(self, state):
-
-        def match(classifier, state0):
-            for idx, ref in enumerate(classifier.specified_atts):
-                x = state0[ref]
-                if self.dtypes[ref]:
-                    if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
-                        pass
-                    else:
-                        return False
-                else:
-                    if x == classifier.condition[idx]:
-                        pass
-                    else:
-                        return False
-            return True
-
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
-                         match(classifier, state)]
+                         match(classifier, state, self.dtypes)]
+
+        if self.matchset.__len__() > self.k:
+            d = [distance(self.popset[idx], state) for idx in self.matchset]
+            d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
+            knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
+            self.matchset = knn_matchset
 
     def make_correctset(self, target):
         self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
@@ -109,18 +111,16 @@ class ClassifierSets(GraphPart):
 
 # deletion methods
     def deletion(self):
-        self.timer.start_deletion()
         while self.micro_pop_size > MAX_CLASSIFIER:
             self.delete_from_sets()
-        self.timer.stop_deletion()
 
     def delete_from_sets(self):
-        ave_fitness = sum([classifier.fitness for classifier in self.popset])\
+        ave_fitness = sum([classifier.fitness * classifier.numerosity for classifier in self.popset])\
                        / float(self.micro_pop_size)
-        delete = self.cl_methods.get_deletion_vote
-        vote_list = [delete(cl, ave_fitness) for cl in self.popset]
+        deletion_vote = ClassifierMethods.get_deletion_vote
+        vote_list = [deletion_vote(self, cl, ave_fitness) for cl in self.popset]
         vote_sum = sum(vote_list)
-        choice_point = vote_sum * random.random()
+        choice_point = vote_sum * self.random.random()
 
         new_vote_sum = 0.0
         for idx in range(vote_list.__len__()):
@@ -160,7 +160,7 @@ class ClassifierSets(GraphPart):
 
         if self.correctset.__len__() > 1:
             parent1, parent2, offspring1, offspring2 = self.selection(iteration)
-            if random.random() < P_XOVER and not self.cl_methods.is_equal(offspring1, offspring2):
+            if self.random.random() < P_XOVER and not ClassifierMethods.is_equal(self, offspring1, offspring2):
                 offspring1, offspring2, changed0 = self.xover(offspring1, offspring2)
             offspring1.condition, offspring1.specified_atts, changed1 = self.mutate(offspring1, state)
             offspring2.condition, offspring2.specified_atts, changed2 = self.mutate(offspring2, state)
@@ -178,13 +178,13 @@ class ClassifierSets(GraphPart):
         if changed0:
             offspring1.set_fitness(FITNESS_RED * (offspring1.fitness + offspring2.fitness)/2)
             offspring2.set_fitness(offspring1.fitness)
-            offspring1.set_loss((1-FITNESS_RED) * (offspring1.loss + offspring2.loss) / 2)
-            offspring2.set_loss(offspring1.loss)
+            # offspring1.set_loss((1-FITNESS_RED) * (offspring1.loss + offspring2.loss) / 2)
+            # offspring2.set_loss(offspring1.loss)
         else:
             offspring1.set_fitness(FITNESS_RED * offspring1.fitness)
             offspring2.set_fitness(FITNESS_RED * offspring2.fitness)
-            offspring1.set_loss((1-FITNESS_RED) * offspring1.loss)
-            offspring2.set_loss((1-FITNESS_RED) * offspring2.loss)
+            # offspring1.set_loss((1-FITNESS_RED) * offspring1.loss)
+            # offspring2.set_loss((1-FITNESS_RED) * offspring2.loss)
 
         if changed0 or changed1 or changed2:
             self.insert_discovered_classifier(offspring1, offspring2, parent1, parent2)
@@ -217,7 +217,7 @@ class ClassifierSets(GraphPart):
         i = 0
         w, v = fitness[0], self.correctset[0]
         while n:
-            x = total * (1 - random.random() ** (1.0 / self.correctset.__len__()))
+            x = total * (1 - self.random.random() ** (1.0 / self.correctset.__len__()))
             total -= x
             while x > w:
                 x -= w
@@ -229,7 +229,7 @@ class ClassifierSets(GraphPart):
 
     def tournament(self, candidates, tsize=5):
         for i in range(candidates.__len__()):
-            candidates = random.sample(candidates, min(candidates.__len__(), tsize))
+            candidates = self.random.sample(candidates, min(candidates.__len__(), tsize))
             yield max(candidates, key=lambda x: x.fitness)
 
     def xover(self, offspring1, offspring2):
@@ -255,7 +255,7 @@ class ClassifierSets(GraphPart):
             idx1 = atts_child1.index(att0)
             idx2 = atts_child2.index(att0)
             if self.dtypes[att0]:  # Continuous attribute
-                choice_key = random.randint(0, 3)
+                choice_key = self.random.randint(0, 3)
                 if choice_key == 0:  # swap min of the range
                     cond_child1[idx1][0], cond_child2[idx2][0] = cond_child2[idx2][0], cond_child1[idx1][0]
                 elif choice_key == 1:  # swap max of the range
@@ -274,9 +274,9 @@ class ClassifierSets(GraphPart):
                 cond_child1[idx1], cond_child2[idx2] = cond_child2[idx2], cond_child1[idx1]
             return True
 
-        changed = [swap1(att) for att in set(atts_child1).difference(set(atts_child2)) if random.random() < 0.5]
-        changed = [swap2(att) for att in set(atts_child2).difference(set(atts_child1)) if random.random() < 0.5]
-        changed = [swap3(att) for att in set(atts_child1).intersection(set(atts_child2)) if random.random() < 0.5]
+        changed = [swap1(att) for att in set(atts_child1).difference(set(atts_child2)) if self.random.random() < 0.5]
+        changed = [swap2(att) for att in set(atts_child2).difference(set(atts_child1)) if self.random.random() < 0.5]
+        changed = [swap3(att) for att in set(atts_child1).intersection(set(atts_child2)) if self.random.random() < 0.5]
 
         offspring1.condition = cond_child1
         offspring1.specified_atts = atts_child1
@@ -292,21 +292,21 @@ class ClassifierSets(GraphPart):
 
         def mutate_single(idx):
             if idx in atts_child:  # attribute specified in classifier condition
-                if random.random() < PROB_HASH:  # remove the specification
+                if self.random.random() < PROB_HASH:  # remove the specification
                     ref_2_cond = atts_child.index(idx)
                     atts_child.remove(idx)
                     cond_child.pop(ref_2_cond)
                     return True
                 elif self.dtypes[idx]:  # continuous attribute
-                    mutate_range = random.random() * float(self.attribute_info[idx][1] -
-                                                           self.attribute_info[idx][0]) / 2
-                    if random.random() < 0.5:  # mutate min of the range
-                        if random.random() < 0.5:  # add
+                    mutate_range = self.random.random() * float(self.attribute_info[idx][1] -
+                                                                self.attribute_info[idx][0]) / 2
+                    if self.random.random() < 0.5:  # mutate min of the range
+                        if self.random.random() < 0.5:  # add
                             cond_child[atts_child.index(idx)][0] += mutate_range
                         else:  # subtract
                             cond_child[atts_child.index(idx)][0] -= mutate_range
                     else:  # mutate max of the range
-                        if random.random() < 0.5:  # add
+                        if self.random.random() < 0.5:  # add
                             cond_child[atts_child.index(idx)][1] += mutate_range
                         else:  # subtract
                             cond_child[atts_child.index(idx)][1] -= mutate_range
@@ -316,10 +316,12 @@ class ClassifierSets(GraphPart):
                     pass
             else:  # attribute not specified in classifier condition
                 atts_child.append(idx)
-                cond_child.append(self.classifier.build_match(state[idx], self.attribute_info[idx], self.dtypes[idx]))
+                cond_child.append(self.classifier.build_match(state[idx], self.attribute_info[idx],
+                                                              self.dtypes[idx], self.random))
                 return True
 
-        changed = [mutate_single(att_idx) for att_idx in range(self.attribute_info.__len__()) if random.random() < P_MUT]
+        changed = [mutate_single(att_idx) for att_idx in range(self.attribute_info.__len__())
+                   if self.random.random() < P_MUT]
         return [cond_child, atts_child, changed]
 
     def insert_classifier_pop(self, classifier, search_matchset=False):
@@ -332,12 +334,10 @@ class ClassifierSets(GraphPart):
 
     def insert_discovered_classifier(self, offspring1, offspring2, parent1, parent2):
         if DO_SUBSUMPTION:
-            self.timer.start_subsumption()
             if offspring1.specified_atts.__len__() > 0:
                 self.subsume_into_parents(offspring1, parent1, parent2)
             if offspring2.specified_atts.__len__() > 0:
                 self.subsume_into_parents(offspring2, parent1, parent2)
-            self.timer.stop_subsumption()
         else:
             self.insert_classifier_pop(offspring1)
             self.insert_classifier_pop(offspring2)
@@ -345,12 +345,12 @@ class ClassifierSets(GraphPart):
     def get_identical(self, classifier, search_matchset=False):
         if search_matchset:
             identical = [self.popset[ref] for ref in self.matchset if
-                         self.cl_methods.is_equal(classifier, self.popset[ref])]
+                         ClassifierMethods.is_equal(self, classifier, self.popset[ref])]
             if identical:
                 return identical[0]
         else:
             identical = [cl for cl in self.popset if
-                         self.cl_methods.is_equal(classifier, cl)]
+                         ClassifierMethods.is_equal(self, classifier, cl)]
             if identical:
                 return identical[0]
         return None
@@ -362,10 +362,10 @@ class ClassifierSets(GraphPart):
 
 # subsumption methods
     def subsume_into_parents(self, offspring, parent1, parent2):
-        if self.cl_methods.subsumption(parent1, offspring):
+        if ClassifierMethods.subsumption(self, parent1, offspring):
             self.micro_pop_size += 1
             parent1.update_numerosity(1)
-        elif self.cl_methods.subsumption(parent2, offspring):
+        elif ClassifierMethods.subsumption(self, parent2, offspring):
             self.micro_pop_size += 1
             parent2.update_numerosity(1)
         else:
@@ -373,35 +373,41 @@ class ClassifierSets(GraphPart):
 
     def subsume_into_correctset(self, classifier):
         choices = [ref for ref in self.correctset if
-                   self.cl_methods.subsumption(self.popset[ref], classifier)]
+                   ClassifierMethods.subsumption(self, self.popset[ref], classifier)]
         if choices:
-            idx = random.randint(choices.__len__())
+            idx = self.random.randint(0, choices.__len__()-1)
             self.popset[choices[idx]].update_numerosity(1)
             self.micro_pop_size += 1
             return
         self.insert_classifier_pop(classifier)
 
     def subsume_correctset(self):
-        subsumer = None
-        for ref in self.correctset:
-            if self.cl_methods.is_subsumer(self.popset[ref]):
-                subsumer = self.popset[ref]
-                break
-        delete_list = []
-        if subsumer:
-            delete_list = [ref for ref in self.correctset if
-                           self.cl_methods.is_more_general(subsumer, self.popset[ref])]
-        for ref in delete_list:
-            subsumer.update_numerosity(self.popset[ref].numerosity)
-            self.remove_from_pop(ref)
-            self.remove_from_matchset(ref)
-            self.remove_from_correctset(ref)
+        if self.correctset.__len__() > 1:
+            subsumer = None
+            compare_list = self.correctset.copy()
+            for ref in self.correctset:
+                if ClassifierMethods.is_subsumer(self, self.popset[ref]):
+                    subsumer = self.popset[ref]
+                    compare_list = compare_list.remove(ref)
+                    break
+
+            delete_list = []
+            if subsumer and compare_list:
+                delete_list = [ref for ref in compare_list if
+                               ClassifierMethods.is_more_general(self, subsumer, self.popset[ref])]
+            for ref in delete_list:
+                subsumer.update_numerosity(self.popset[ref].numerosity)
+                self.remove_from_pop(ref)
+                self.remove_from_matchset(ref)
+                self.remove_from_correctset(ref)
+            else:
+                return
 
 # update sets
     def update_sets(self, target):
         m_size = sum([self.popset[ref].numerosity for ref in self.matchset])
-        [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
         [self.popset[ref].update_correct() for ref in self.correctset]
+        [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
 
     def clear_sets(self):
         self.matchset = []
@@ -413,8 +419,8 @@ class ClassifierSets(GraphPart):
                               for classifier in self.popset])
         loss_sum = sum([classifier.loss for classifier in self.popset])
         try:
-            self.ave_generality = generality_sum / float(self.micro_pop_size)
-            self.ave_loss = loss_sum / float(self.micro_pop_size)
+            self.ave_generality = generality_sum / float(self.popset.__len__())
+            self.ave_loss = loss_sum / float(self.popset.__len__())
         except ZeroDivisionError:
             self.ave_generality = None
             self.ave_loss = None

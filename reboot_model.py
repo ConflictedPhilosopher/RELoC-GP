@@ -9,7 +9,6 @@ import os.path
 import pandas as pd
 
 from classifier import Classifier
-from preprocessing import Preprocessing
 from config import *
 
 
@@ -39,6 +38,5 @@ class RebootModel():
 
 
 if __name__ == "__main__":
-    data = Preprocessing()
-    reboot = RebootModel(0, data)
+    reboot = RebootModel(0, [])
     reboot.get_model()
