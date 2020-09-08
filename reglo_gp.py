@@ -14,12 +14,10 @@ from timer import Timer
 from performance import Performance
 from reporting import Reporting
 from reboot_model import RebootModel
-from graph_partitioning import GraphPart
 
 
-class REGLoGP(GraphPart):
+class REGLoGP:
     def __init__(self, exp, data):
-        GraphPart.__init__(self)
         self.exp = exp
         self.data = data
         self.tracked_loss = 0
@@ -126,7 +124,7 @@ class REGLoGP(GraphPart):
         if (self.iteration - self.population.get_time_average()) > THETA_GA:
             popset = self.population.popset
             if self.population.matchset.__len__() > 1:
-                self.refine_prediction([popset[idx] for idx in self.population.matchset])
+                self.population.apply_partitioning(self.iteration)
             [popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
             self.population.apply_ga(self.iteration, sample[0])
 

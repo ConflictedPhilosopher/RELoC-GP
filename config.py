@@ -15,11 +15,11 @@ NO_LABELS = 6
 GET_MLD_PROP = False
 
 REBOOT_MODEL = 0
-MAX_ITERATION = 3000
+MAX_ITERATION = 30000
 MAX_CLASSIFIER = 1000
 PROB_HASH = 0.5
 DO_SUBSUMPTION = True
-AVG_COUNT = 1
+AVG_COUNT = 10
 
 PREDICTION_METHOD = 2  # 1: max prediction - 2: aggregated prediction
 THRESHOLD = 'OT'
@@ -27,7 +27,7 @@ THETA = 0.5
 RANK_CUT = 1
 
 K = 2  # number of the label clusters
-L_MIN = 2
+L_MIN = 1
 
 # ------------------------------------------------------------------------------
 INIT_FITNESS = 0.01
