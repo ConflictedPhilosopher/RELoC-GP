@@ -8,6 +8,7 @@ import math
 
 from classifier_methods import ClassifierMethods
 from classifier import Classifier
+from graph_partitioning import GraphPart
 from config import *
 
 
@@ -34,9 +35,10 @@ def distance(classifier, state):
     return d / classifier.specified_atts.__len__()
 
 
-class ClassifierSets(ClassifierMethods):
+class ClassifierSets(ClassifierMethods, GraphPart):
     def __init__(self, attribute_info, dtypes, rand_func, popset=None):
         ClassifierMethods.__init__(self, dtypes)
+        GraphPart.__init__(self)
         self.popset = []
         self.matchset = []
         self.correctset = []
@@ -87,6 +89,26 @@ class ClassifierSets(ClassifierMethods):
     def make_correctset(self, target):
         self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
 
+    def apply_partitioning(self, it):
+        new_classifiers = self.refine_prediction([self.popset[idx] for idx in self.matchset], it)
+        try:
+            count = sum([new_list.__len__() for new_list in new_classifiers])
+        except TypeError:
+            count = 0
+        if count > 0:
+            [[self.insert_classifier_pop(classifier, True) for classifier in new_list] for new_list in new_classifiers]
+            remove_idx = [idx for idx in self.matchset if self.popset[idx].numerosity == 0]
+            i = 0
+            for idx in remove_idx:
+                self.remove_from_pop(idx - i)
+                self.remove_from_matchset(idx - i)
+                self.remove_from_correctset(idx - i)
+                i += 1
+            [self.correctset.append(self.popset.__len__() - 1 - cc) for cc in range(count)]
+            self.micro_pop_size -= new_classifiers.__len__()
+        else:
+            pass
+
 # deletion methods
     def deletion(self):
         while self.micro_pop_size > MAX_CLASSIFIER:
@@ -119,7 +141,7 @@ class ClassifierSets(ClassifierMethods):
     def remove_from_matchset(self, ref):
         try:
             self.matchset.remove(ref)
-            matchset_copy = [ind-1 for ind in self.matchset if ind > ref]
+            matchset_copy = [ind-1 if ind > ref else ind for ind in self.matchset]
             self.matchset = matchset_copy
         except ValueError:
             pass
@@ -127,7 +149,7 @@ class ClassifierSets(ClassifierMethods):
     def remove_from_correctset(self, ref):
         try:
             self.correctset.remove(ref)
-            correctset_copy = [ind-1 for ind in self.correctset if ind > ref]
+            correctset_copy = [ind-1 if ind > ref else ind for ind in self.correctset]
             self.correctset = correctset_copy
         except ValueError:
             pass
