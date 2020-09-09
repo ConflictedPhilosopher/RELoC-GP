@@ -26,7 +26,6 @@ class Classifier:
         self.deletion_vote = 0.0
 
     def classifier_cover(self, set_size, it, state, target, attribute_info, dtypes, random_func):
-        self.ga_time = it
         self.init_time = it
         self.ave_matchset_size = set_size
         self.prediction = target
@@ -105,7 +104,9 @@ class Classifier:
         self.loss /= float(self.match_count)
 
         # update_fitness()
-        self.fitness = max((1 - self.loss)**NU, INIT_FITNESS)
+        # self.fitness = max((1 - self.loss)**NU, INIT_FITNESS)
+        self.fitness = max(2 * self.prediction.intersection(target).__len__()
+                           / (self.prediction.__len__() + target.__len__()), INIT_FITNESS)
         # self.fitness = max(float(self.correct_count/self.match_count) ** NU, INIT_FITNESS)
 
     def set_fitness(self, fitness):
@@ -113,6 +114,7 @@ class Classifier:
 
     def set_loss(self, loss):
         self.loss = loss
+
 
 if __name__ == "__main__":
     # classifier = Classifier(1, 0, [0.5, 0.5], {1, 2})
