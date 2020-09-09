@@ -26,9 +26,9 @@ class PlotTrack:
         self.records /= float(records.__len__())
 
         iterations = range(TRACK_FREQ, MAX_ITERATION+TRACK_FREQ, TRACK_FREQ)
-        classifier_loss = self.records[:, 1]
+        train_f = self.records[:, 1]
         test_f = self.records[:, 2]
-        # plt.plot(iterations, classifier_loss, label='avg classifier loss')
+        plt.plot(iterations, train_f, label='train f-score')
         plt.plot(iterations, test_f, label='test f-score')
         plt.xlabel('Iteration')
         plt.ylabel('F-score')
