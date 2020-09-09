@@ -17,6 +17,8 @@ class Preprocessing:
         self.label_count = 0
         self.label_dict = {}
         self.distinct_lp = 0
+        self.unseen_test_lp = []
+        self.unseen_test_labels = {}
         self.imbalance_lp = 0
         self.card = 0.0
         self.density = 0.0
@@ -113,6 +115,19 @@ class Preprocessing:
         self.imbalance_lp = max(self.label_dict.values()) \
             / min(self.label_dict.values())
 
+        label_list = []
+        if self.data_train_list:
+            for row in self.data_train_list:
+                if row[-1] in label_list:
+                    pass
+                else:
+                    label_list.append(row[-1])
+            for row in self.data_test_list:
+                if row[-1] in label_list:
+                    pass
+                else:
+                    self.unseen_test_lp.append(row[-1])
+
 # ِ multi-label properties
     def multilabel_properties(self, data_complete):
         count = sum([len(label) for label in data_complete['labelset']])
@@ -128,14 +143,19 @@ class Preprocessing:
         temp = [(val - self.imbalance_mean)**2 for val in imbalance_label]
         imbalance_label_sigma = sqrt(sum(temp) / (self.label_count - 1))
         self.cvir = imbalance_label_sigma / self.imbalance_mean
+
+        test_labels = set.union(*[row[-1] for row in self.data_test_list])
+        self.unseen_test_labels = test_labels.difference(set.union(*[row[-1] for row in self.data_train_list]))
         self.print_mldp()
 
     def print_mldp(self):
-        print('Multi-label data stats:')
+        print('Multi-label stats:')
         print('Training/Test samples: {} / {}'.format(self.data_train_count, self.data_test_count))
         print('Lcard: %.4f' % self.card)
         print('Ldens: %.4f' % self.density)
-
+        print('Unseen test LP: %d' % self.unseen_test_lp.__len__())
+        if self.unseen_test_labels:
+            print('Unseen test labels: ', self.unseen_test_labels)
 
 # train-test split
     def train_test_split(self, data_complete):
@@ -164,7 +184,7 @@ class Preprocessing:
 # format data
     def format_data(self, data):
         data_list = []
-        # data.sample(frac=1.0, random_state=SEED_NUMBER)
+        data.sample(frac=1.0, random_state=SEED_NUMBER)
         for idx, row in data.iterrows():
             data_list.append([list(row[:NO_FEATURES]), row[-1]])
         return data_list
