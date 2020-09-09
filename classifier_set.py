@@ -63,7 +63,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
             self.matchset = knn_matchset
 
-        numerosity_sum = sum([self.popset[ind].numerosity for ind in self.matchset])
+        numerosity_sum = sum([self.popset[idx].numerosity for idx in self.matchset])
         for ind in self.matchset:
             if self.popset[ind].prediction == target:
                 covering = False
@@ -315,11 +315,12 @@ class ClassifierSets(ClassifierMethods, GraphPart):
                 else:
                     pass
             else:  # attribute not specified in classifier condition
-                atts_child.append(idx)
-                cond_child.append(self.classifier.build_match(state[idx], self.attribute_info[idx],
-                                                              self.dtypes[idx], self.random))
-                return True
-
+                if self.random.random() < (1 - PROB_HASH):
+                    atts_child.append(idx)
+                    cond_child.append(self.classifier.build_match(state[idx], self.attribute_info[idx],
+                                                                  self.dtypes[idx], self.random))
+                    return True
+                return False
         changed = [mutate_single(att_idx) for att_idx in range(self.attribute_info.__len__())
                    if self.random.random() < P_MUT]
         return [cond_child, atts_child, changed]
