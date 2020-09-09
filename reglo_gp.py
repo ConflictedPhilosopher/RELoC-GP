@@ -47,7 +47,7 @@ class REGLoGP(Prediction):
             raise
         else:
             self.training_track.write("iteration, macroPop, microPop, aveLoss, "
-                                      "aveGenerality, testFscore, time(min)\n")
+                                      "aveGenerality, trainFscore, testFscore, time(min)\n")
 
     def train_model(self):
         if self.data.data_train_folds:
@@ -63,14 +63,13 @@ class REGLoGP(Prediction):
             sample = samples_training[self.iteration % samples_training.__len__()]
             self.train_iteration(sample)
 
-            def track_performance():
+            def track_performance(samples):
                 fscore = 0
                 label_prediction = set()
-
-                for test_sample in samples_test:
-                    self.population.make_eval_matchset(test_sample[0])
+                for sample in samples:
+                    self.population.make_eval_matchset(sample[0])
                     if not self.population.matchset:
-                        fscore += performance.fscore(label_prediction, test_sample[1])
+                        fscore += performance.fscore(label_prediction, sample[1])
                     else:
                         if PREDICTION_METHOD == 1:
                             label_prediction = Prediction.max_prediction(self, self.population.popset,
@@ -83,20 +82,22 @@ class REGLoGP(Prediction):
                             else:
                                 print("prediction threshold method unidentified!")
 
-                        fscore += performance.fscore(label_prediction, test_sample[1])
-                return fscore/samples_test.__len__()
+                        fscore += performance.fscore(label_prediction, sample[1])
+                return fscore/samples.__len__()
 
             if (self.iteration % TRACK_FREQ) == 0 and self.iteration > 0:
                 # print('Iteration ', self.iteration)
                 self.timer.start_evaluation()
-                test_fscore = track_performance()
+                test_fscore = track_performance(samples_test)
+                train_fscore = track_performance(samples_training)
                 self.population.pop_average_eval()
                 self.training_track.write(str(self.iteration) + ", " + self.population.get_pop_tracking() + ", "
+                                          + str("%.4f" % train_fscore) + ", "
                                           + str("%.4f" % test_fscore) + ", "
                                           + str("%.4f" % self.timer.get_global_timer()) + "\n")
                 self.timer.stop_evaluation()
 
-                self.track_to_plot.append([self.iteration, self.population.ave_loss, test_fscore])
+                self.track_to_plot.append([self.iteration, train_fscore, test_fscore])
 
                 if float(self.tracked_loss/TRACK_FREQ) - loss_old > 0.1:
                     stop_training = True
@@ -145,8 +146,8 @@ class REGLoGP(Prediction):
         if (self.iteration - self.population.get_time_average()) > THETA_GA:
             self.timer.start_selection()
             popset = self.population.popset
-            if self.population.matchset.__len__() > 1:
-                self.population.apply_partitioning(self.iteration)
+            # if self.population.matchset.__len__() > 1:
+            #     self.population.apply_partitioning(self.iteration)
             [popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
             self.population.apply_ga(self.iteration, sample[0])
             self.timer.stop_selection()
