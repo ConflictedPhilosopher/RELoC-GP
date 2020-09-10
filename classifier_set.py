@@ -16,7 +16,7 @@ def match(classifier, state, dtypes):
     for idx, ref in enumerate(classifier.specified_atts):
         x = state[ref]
         if dtypes[ref]:
-            if classifier.condition[idx][0] < x < classifier.condition[idx][1]:
+            if classifier.condition[idx][0] <= x <= classifier.condition[idx][1]:
                 pass
             else:
                 return False
@@ -49,7 +49,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.attribute_info = attribute_info
         self.dtypes = dtypes
         self.random = rand_func
-        self.k = 5
+        self.k = MAX_CLASSIFIER
         if popset:
             self.popset = popset
 
@@ -61,7 +61,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             d = [distance(self.popset[idx], state) for idx in self.matchset]
             d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
             knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
-            self.matchset = knn_matchset
+            self.matchset = sorted(knn_matchset)
 
         numerosity_sum = sum([self.popset[idx].numerosity for idx in self.matchset])
         for ind in self.matchset:
@@ -80,10 +80,10 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
                          match(classifier, state, self.dtypes)]
 
-        if self.matchset.__len__() > self.k:
+        if self.matchset.__len__() > 5:  # self.k:
             d = [distance(self.popset[idx], state) for idx in self.matchset]
             d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
-            knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
+            knn_matchset = [self.matchset[idx] for idx in d_sort_index[:5]]  # [:self.k]]
             self.matchset = knn_matchset
 
     def make_correctset(self, target):
@@ -149,10 +149,10 @@ class ClassifierSets(ClassifierMethods, GraphPart):
     def remove_from_correctset(self, ref):
         try:
             self.correctset.remove(ref)
-            correctset_copy = [ind-1 if ind > ref else ind for ind in self.correctset]
-            self.correctset = correctset_copy
         except ValueError:
             pass
+        correctset_copy = [ind - 1 if ind > ref else ind for ind in self.correctset]
+        self.correctset = correctset_copy
 
 # genetic algorithm methods
     def apply_ga(self, iteration, state):
@@ -305,9 +305,13 @@ class ClassifierSets(ClassifierMethods, GraphPart):
                             cond_child[atts_child.index(idx)][0] += mutate_range
                         else:  # subtract
                             cond_child[atts_child.index(idx)][0] -= mutate_range
+                            cond_child[atts_child.index(idx)][0] = max(cond_child[atts_child.index(idx)][0],
+                                                                       self.attribute_info[idx][0])
                     else:  # mutate max of the range
                         if self.random.random() < 0.5:  # add
                             cond_child[atts_child.index(idx)][1] += mutate_range
+                            cond_child[atts_child.index(idx)][1] = min(cond_child[atts_child.index(idx)][1],
+                                                                       self.attribute_info[idx][1])
                         else:  # subtract
                             cond_child[atts_child.index(idx)][1] -= mutate_range
                     cond_child[atts_child.index(idx)].sort()
