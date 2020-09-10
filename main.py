@@ -17,10 +17,9 @@ from plotting import PlotTrack
 
 
 def handle_model(args):
-    exp, data, return_dict = args
+    exp, data = args
     model = REGLoGP(exp, data)
     perf, track_to_plot = model.train_model()
-    return_dict[exp] = [perf, track_to_plot]
     return [perf, track_to_plot]
 
 
@@ -37,7 +36,7 @@ def run_parallel(olo, cv, cmplt):
         n_jobs = AVG_COUNT
 
     start = time.time()
-    arg_instances = [[idx, data, dict()] for idx in range(n_jobs)]
+    arg_instances = [[idx, data] for idx in range(n_jobs)]
     results = Parallel(n_jobs=n_jobs, verbose=1, backend="multiprocessing")(map(delayed(handle_model), arg_instances))
     end = time.time()
     print('multi-threading time ', (end - start)/60)
@@ -58,4 +57,4 @@ def avg_performance(perf_dicts):
 
 
 if __name__ == "__main__":
-    run_parallel(1, 0, 0)
+    run_parallel(0, 0, 1)
