@@ -6,6 +6,8 @@
 # ------------------------------------------------------------------------------
 import math
 
+from sklearn.metrics.pairwise import cosine_similarity
+
 from classifier_methods import ClassifierMethods
 from classifier import Classifier
 from graph_partitioning import GraphPart
@@ -26,6 +28,13 @@ def match(classifier, state, dtypes):
             else:
                 return False
     return True
+
+
+def similarity(classifier, state):
+    center = [(att[1] + att[0]) / 2 for att in classifier.condition]
+    x = [state[idx] for idx in classifier.specified_atts]
+    sim = cosine_similarity([center, x])[0][1]
+    return sim
 
 
 def distance(classifier, state):
@@ -49,7 +58,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.attribute_info = attribute_info
         self.dtypes = dtypes
         self.random = rand_func
-        self.k = MAX_CLASSIFIER
+        self.k = 5
         if popset:
             self.popset = popset
 
@@ -58,6 +67,8 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
                          match(classifier, state, self.dtypes)]
         if self.matchset.__len__() > self.k:
+            sim = [similarity(self.popset[idx], state) for idx in self.matchset]
+            sim_sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
             d = [distance(self.popset[idx], state) for idx in self.matchset]
             d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
             knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
