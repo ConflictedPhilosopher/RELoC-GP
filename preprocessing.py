@@ -22,7 +22,7 @@ class Preprocessing:
         self.imbalance_lp = 0
         self.card = 0.0
         self.density = 0.0
-        self.class_pi = []
+        self.class_dict = []
         self.imbalance_mean = 0.0
         self.cvir = 0.0
         self.attribute_info = []
@@ -105,15 +105,16 @@ class Preprocessing:
 
 # characterize classes
     def characterize_labels(self, data_complete):
-        self.label_count = len(data_complete.iloc[0, NO_FEATURES:-1])
+        self.label_count = NO_LABELS
+        lp_dict = {}
         for label in data_complete['labelset']:
-            if str(label) in self.label_dict.keys():
-                self.label_dict[str(label)] += 1
+            if str(label) in lp_dict.keys():
+                lp_dict[str(label)] += 1
             else:
-                self.label_dict[str(label)] = 1
-        self.distinct_lp = self.label_dict.__len__()
-        self.imbalance_lp = max(self.label_dict.values()) \
-            / min(self.label_dict.values())
+                lp_dict[str(label)] = 1
+        self.distinct_lp = lp_dict.__len__()
+        self.imbalance_lp = max(lp_dict.values()) \
+                            / min(lp_dict.values())
 
         label_list = []
         if self.data_train_list:
@@ -131,16 +132,14 @@ class Preprocessing:
 # ِ multi-label properties
     def multilabel_properties(self, data_complete):
         count = sum([len(label) for label in data_complete['labelset']])
-        self.card = count/self.data_complete_count
-        self.density = self.card/self.label_count
-        class_dict = dict(zip(range(self.label_count), [0]*self.label_count))
-        for label in data_complete['labelset']:
-            for lbl in label:
-                class_dict[lbl] += 1
-        self.class_pi = [val/self.data_complete_count for val in list(class_dict.values())]
-        imbalance_label = [max(self.class_pi)/val for val in self.class_pi]
-        self.imbalance_mean = sum(imbalance_label)/self.label_count
-        temp = [(val - self.imbalance_mean)**2 for val in imbalance_label]
+        self.card = count / self.data_complete_count
+        self.density = self.card / self.label_count
+        counts = [data_complete[classs].sum() for classs in data_complete.columns[NO_FEATURES:-1]]
+        self.class_dict = dict(zip(list(data_complete.columns)[NO_FEATURES:-1], counts))
+        class_pi = [val / self.data_complete_count for val in list(self.class_dict.values())]
+        imbalance_label = [max(class_pi) / val for val in class_pi]
+        self.imbalance_mean = sum(imbalance_label) / self.label_count
+        temp = [(val - self.imbalance_mean) ** 2 for val in imbalance_label]
         imbalance_label_sigma = sqrt(sum(temp) / (self.label_count - 1))
         self.cvir = imbalance_label_sigma / self.imbalance_mean
 

@@ -407,15 +407,17 @@ class ClassifierSets(ClassifierMethods, GraphPart):
                     compare_list = compare_list.remove(ref)
                     break
 
-            delete_list = []
             if subsumer and compare_list:
                 delete_list = [ref for ref in compare_list if
                                ClassifierMethods.is_more_general(self, subsumer, self.popset[ref])]
-            for ref in delete_list:
-                subsumer.update_numerosity(self.popset[ref].numerosity)
-                self.remove_from_pop(ref)
-                self.remove_from_matchset(ref)
-                self.remove_from_correctset(ref)
+                sub = 0
+                for ref in delete_list:
+                    ref -= sub
+                    subsumer.update_numerosity(self.popset[ref].numerosity)
+                    self.remove_from_pop(ref)
+                    self.remove_from_matchset(ref)
+                    self.remove_from_correctset(ref)
+                    sub += 1
             else:
                 return
 

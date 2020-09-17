@@ -8,7 +8,6 @@ import math
 
 def fitness_cal(DisC, Nc, label, StdF, gamma):
     fitness = np.zeros(np.shape(DisC)[0])
-    # print(np.shape(fitness))
     for i in range(Nc):
         TempSum = 0
         for j in range(Nc):
@@ -25,7 +24,6 @@ def Pseduo_Peaks(DisC, label, fitness, StdF, gamma):
     i = 0
     marked = []
     N = np.shape(DisC)[0]
-    # N = np.shape(label)[1]
     C_Indices = np.arange(0, N)  # The pseduo Cluster label of features
     PeakIndices = []
     Pfitness = []
@@ -67,22 +65,19 @@ def Pseduo_Peaks(DisC, label, fitness, StdF, gamma):
             C_Indices = cluster_assign(DisC, PeakIndices, C_Indices)
             break
 
-        i = i + 1  # Expand the size of the pseduo cluster set by 1
+        i = i + 1  # Expand the size of the pseudo cluster set by 1
     return PeakIndices, Pfitness, C_Indices
 
 
 def NeighborSearch(DisC, label, P_indice, marked, radius):
     Cluster = []
     N = np.shape(DisC)[0]
-    # N = np.shape(label)[1]
     for i in range(N):
         if i not in marked:
             Dist = DisC[i, P_indice]
             if Dist <= radius:
                 Cluster.append(i)
-    Indices = Cluster
-
-    return Indices
+    return Cluster
 
 
 def Sharing(fitness, indices):
@@ -92,7 +87,6 @@ def Sharing(fitness, indices):
         sum1 = sum1 + fitness[indices[j]]
     for th in range(len(indices)):
         newfitness[indices[th]] = fitness[indices[th]] / (1 + sum1)
-
     return newfitness
 
 
@@ -105,7 +99,6 @@ def Pseduo_Evolve(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, ga
     HistClusterF = PseDuoF
     while True:
         # Call the merge function in each iteration
-
         [Cluster, Cfitness, F_Indices] = Pseduo_Merge(DisC, HistCluster, HistClusterF, C_Indices, data, fitness, StdF,
                                                       gamma)
         # Check for the stablization of clutser evolution and exit the loop
@@ -118,7 +111,6 @@ def Pseduo_Evolve(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, ga
     FCluster = Cluster
     Ffitness = Cfitness
     C_Indices = F_Indices
-
     return FCluster, Ffitness, C_Indices
 
 
@@ -154,13 +146,10 @@ def Pseduo_Merge(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, gam
     NewPI = []
     # Update the pseduo feature clusters list with the obtained mergelist
     for m in range(np.shape(ML)[0]):
-        # print(ML[m][0],ML[m][1])
         if fitness[ML[m][0]] > fitness[ML[m][1]]:
             NewPI.append(ML[m][0])
-        #            F_Indices[C_Indices == ML[m][1]] = ML[m][0]
         else:
             NewPI.append(ML[m][1])
-    #            F_Indices[C_Indices == ML[m][0]] = ML[m][1]
     # Update the pseduo feature clusters list with pseduo clusters that have not appeared in the merge list
     for n in range(len(PeakIndices)):
         if PeakIndices[n] in Unmarked:
@@ -169,9 +158,7 @@ def Pseduo_Merge(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, gam
     # Updated pseduo feature clusters information after merging
     FCluster = np.unique(NewPI)
     Ffitness = fitness[FCluster]
-
     F_Indices = cluster_assign(DisC, FCluster, F_Indices)
-
     return FCluster, Ffitness, F_Indices
 
 
@@ -186,16 +173,13 @@ def cluster_assign(DisC, P_indices, F_indices):
 
 # --------------------------------------------------------------------------------------------------------------
 def density_based(K, label, DisC, label_ref=None):
-    StdF = np.max(DisC)
+    StdF = max(np.max(DisC), 1)
     if label_ref == None:
         label_ref = np.arange(0, np.shape(DisC)[0])
     else:
         label_ref = np.asarray(label_ref)
-
     Nc = np.shape(DisC)[0]
-
     gamma = 5
-
     fitness = fitness_cal(DisC, Nc, label, StdF, gamma)
     oldfitness = np.copy(fitness)
 
@@ -210,9 +194,7 @@ def density_based(K, label, DisC, label_ref=None):
     [FCluster, Ffitness, C_Indices] = Pseduo_Evolve(DisC, PseDuo, PseDuoF, C_Indices, label, fitness, StdF, gamma, K)
 
     SF = FCluster
-
     cluster_info = {}
-
     if len(SF) < K:
         return cluster_info
 
