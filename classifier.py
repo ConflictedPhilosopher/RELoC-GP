@@ -105,7 +105,9 @@ class Classifier:
         self.loss /= float(self.match_count)
 
         # update_fitness()
-        self.fitness = max((1 - self.loss)**NU, INIT_FITNESS)
+        # self.fitness = max((1 - self.loss)**NU, INIT_FITNESS)
+        self.fitness = max(2 * self.prediction.intersection(target).__len__()
+                           / (self.prediction.__len__() + target.__len__()), INIT_FITNESS)
         # self.fitness = max(float(self.correct_count/self.match_count) ** NU, INIT_FITNESS)
 
     def set_fitness(self, fitness):
