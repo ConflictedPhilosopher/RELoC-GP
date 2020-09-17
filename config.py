@@ -8,22 +8,22 @@
 SEED_NUMBER = 10
 
 DATA_DIR = "D:\Datasets"
-DATA_HEADER = "emotions"
+DATA_HEADER = "mit-csail"
 REPORT_PATH = "report"
-NO_FEATURES = 72
-NO_LABELS = 6
+NO_FEATURES = 256
+NO_LABELS = 91
 GET_MLD_PROP = True
 
 REBOOT_MODEL = 0
-MAX_ITERATION = 1000
-MAX_CLASSIFIER = 200
-PROB_HASH = 0.9
+MAX_ITERATION = 10000
+MAX_CLASSIFIER = 6000
+PROB_HASH = 0.85
 TRACK_FREQ = 1000
-AVG_COUNT = 1
+AVG_COUNT = 10
 
 PREDICTION_METHOD = 2  # 1: max prediction - 2: aggregated prediction
 THRESHOLD = 1  # 1: score-based one-threshold - 2: rank-based rank-cut
-THETA = 0.5
+THETA = 0.05
 RANK_CUT = 1
 
 K = 2  # number of label clusters

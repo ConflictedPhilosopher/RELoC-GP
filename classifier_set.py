@@ -69,9 +69,9 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         if self.matchset.__len__() > self.k:
             sim = [similarity(self.popset[idx], state) for idx in self.matchset]
             sim_sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
-            d = [distance(self.popset[idx], state) for idx in self.matchset]
-            d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
-            knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
+            # d = [distance(self.popset[idx], state) for idx in self.matchset]
+            # d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
+            knn_matchset = [self.matchset[idx] for idx in sim_sorted_index[:self.k]]
             self.matchset = sorted(knn_matchset)
 
         numerosity_sum = sum([self.popset[idx].numerosity for idx in self.matchset])
@@ -189,13 +189,9 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         if changed0:
             offspring1.set_fitness(FITNESS_RED * (offspring1.fitness + offspring2.fitness)/2)
             offspring2.set_fitness(offspring1.fitness)
-            # offspring1.set_loss((1-FITNESS_RED) * (offspring1.loss + offspring2.loss) / 2)
-            # offspring2.set_loss(offspring1.loss)
         else:
             offspring1.set_fitness(FITNESS_RED * offspring1.fitness)
             offspring2.set_fitness(FITNESS_RED * offspring2.fitness)
-            # offspring1.set_loss((1-FITNESS_RED) * offspring1.loss)
-            # offspring2.set_loss((1-FITNESS_RED) * offspring2.loss)
 
         if changed0 or changed1 or changed2:
             self.insert_discovered_classifier(offspring1, offspring2, parent1, parent2)
