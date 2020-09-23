@@ -13,14 +13,14 @@ from collections import Counter
 from preprocessing import Preprocessing
 from config import *
 from reglo_gp import REGLoGP
-from plotting import PlotTrack
+from visualization import plot_records, plot_bar
 
 
 def handle_model(args):
     exp, data = args
     model = REGLoGP(exp, data)
-    perf, track_to_plot = model.train_model()
-    return [perf, track_to_plot]
+    ml_perf, class_prec, track_to_plot = model.train_model()
+    return [ml_perf, class_prec, track_to_plot]
 
 
 def run_parallel(olo, cv, cmplt):
@@ -41,19 +41,23 @@ def run_parallel(olo, cv, cmplt):
     end = time.time()
     print('multi-threading time ', (end - start)/60)
 
-    perf = [result[0] for result in results]
-    track_to_plot = [result[1] for result in results]
-    avg_performance(perf)
+    ml_performance = [result[0] for result in results]
+    class_precision = [result[1] for result in results]
+    track_to_plot = [result[2] for result in results]
 
-    plot = PlotTrack()
-    plot.plot_records(track_to_plot)
-
-
-def avg_performance(perf_dicts):
-    total = sum(map(Counter, perf_dicts), Counter())
-    avg_perf = {key: val / perf_dicts.__len__() for key, val in total.items()}
+    avg_perf = avg_performance(ml_performance)
     print('Average ML performance:')
     [print(metric + ' ' + str('%.5f' % val)) for metric, val in avg_perf.items()]
+
+    avg_precision = avg_performance(class_precision)
+    plot_bar(avg_precision, 'precision')
+    plot_records(track_to_plot)
+
+
+def avg_performance(dict_list):
+    total = sum(map(Counter, dict_list), Counter())
+    avg_result = {key: total[key] / dict_list.__len__() for key in dict_list[0].keys()}
+    return avg_result
 
 
 if __name__ == "__main__":
