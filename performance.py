@@ -159,6 +159,25 @@ class Performance:
         roc_auc[where_are_NaNs] = 0.0
         self.roc_auc = sum(roc_auc) / NO_LABELS
 
+    def get_report(self, sample_count):
+        multi_label_perf = dict()
+        multi_label_perf['em'] = self.exact_match_example / sample_count
+        multi_label_perf['hl'] = self.hamming_loss_example / sample_count
+        multi_label_perf['acc'] = self.accuracy_example / sample_count
+        multi_label_perf['pr'] = self.precision_example / sample_count
+        multi_label_perf['re'] = self.recall_example / sample_count
+        multi_label_perf['f'] = self.fscore_example / sample_count
+        multi_label_perf['micro-f'] = self.micro_fscore
+        multi_label_perf['macro-f'] = self.macro_fscore
+        multi_label_perf['micro-pr'] = self.micro_precision
+        multi_label_perf['macro-pr'] = self.macro_precision
+        multi_label_perf['micro-re'] = self.micro_recall
+        multi_label_perf['macro-re'] = self.macro_recall
+        multi_label_perf['1e'] = self.one_error_example / sample_count
+        multi_label_perf['rl'] = self.rank_loss_example / sample_count
+        multi_label_perf['auc'] = self.roc_auc
+        return multi_label_perf
+
 # extended hamming loss
 
 
