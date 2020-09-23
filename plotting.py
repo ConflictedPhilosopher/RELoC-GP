@@ -35,6 +35,5 @@ class PlotTrack:
         plt.ylabel('F-score')
         plt.legend()
         fig_name = str(MAX_CLASSIFIER) + '-' + str(PROB_HASH) + '.png'
-        plt.savefig(os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, 'params-' + str(MAX_CLASSIFIER) +
-                                 '-' + str(PROB_HASH), fig_name), bbox_inches='tight')
+        plt.savefig(os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, fig_name), bbox_inches='tight')
         plt.close()
