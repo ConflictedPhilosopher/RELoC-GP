@@ -76,6 +76,8 @@ class ClassifierMethods:
             classifier_string += ","
         prediction_string = ";".join([str(label) for label in classifier.prediction])
         classifier_string += (prediction_string + ",")
+        label_precision = ";".join([str(label)+':'+str(pr) for label, pr in classifier.label_based.items()])
+        classifier_string += (label_precision + ",")
         parameter_string = str("%.4f" % classifier.fitness) + "," + \
             str("%.4f" % classifier.loss) + "," + \
             str("%d" % classifier.correct_count) + "," + \

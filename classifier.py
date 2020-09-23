@@ -19,6 +19,7 @@ class Classifier:
         self.match_count = 0
         self.correct_count = 0
         self.loss = 0.0
+        self.label_based = {}
         self.fitness = INIT_FITNESS
         self.ave_matchset_size = 0
         self.init_time = 0
@@ -36,6 +37,7 @@ class Classifier:
                     self.specified_atts.append(ref)
                     self.condition.append(self.build_match(x, attribute_info[ref], dtypes[ref], random_func))
                     og = False
+        self.label_based = {k: 0 for k in self.prediction}
 
     def build_match(self, x, att_info, dtype, random_func):
         if dtype:
@@ -58,6 +60,7 @@ class Classifier:
         self.ga_time = it
         self.fitness = classifier_old.fitness
         self.loss = classifier_old.loss
+        self.label_based = classifier_old.label_based
 
     def classifier_reboot(self, classifier_info, dtypes):
         classifier_info = classifier_info.to_list()
@@ -78,8 +81,10 @@ class Classifier:
                 update_cond(ref, att_val)
 
         self.prediction = set(int(n) for n in classifier_info[NO_FEATURES].split(";"))
+        label_precisions = classifier_info[NO_FEATURES + 1]
+        self.label_based = {int(kv.split(":")[0]): float(kv.split(":")[1]) for kv in label_precisions.split(";")}
         self.fitness, self.loss, self.correct_count, self.numerosity, self.match_count, self.ave_matchset_size, \
-            self.init_time, self.ga_time = classifier_info[NO_FEATURES + 1:]
+        self.init_time, self.ga_time = classifier_info[NO_FEATURES + 2:]
 
     def update_numerosity(self, num):
         self.numerosity += num
@@ -104,11 +109,17 @@ class Classifier:
         self.loss += (self.prediction.symmetric_difference(target).__len__() / (float(NO_LABELS)))
         self.loss /= float(self.match_count)
 
+        # update label_based(target)
+        for l in self.prediction.intersection(target):
+            self.label_based[l] += 1
+
         # update_fitness()
+        # label_accuracies = sum([acc / self.match_count for acc in self.label_based.values()]) \
+        #                    / float(self.prediction.__len__())
+        # self.fitness = max((label_accuracies ** NU), INIT_FITNESS)
         # self.fitness = max((1 - self.loss)**NU, INIT_FITNESS)
-        self.fitness = max(2 * self.prediction.intersection(target).__len__()
-                           / (self.prediction.__len__() + target.__len__()), INIT_FITNESS)
-        # self.fitness = max(float(self.correct_count/self.match_count) ** NU, INIT_FITNESS)
+        self.fitness = max((2 * self.prediction.intersection(target).__len__()
+                            / (self.prediction.__len__() + target.__len__())) ** NU, INIT_FITNESS)
 
     def set_fitness(self, fitness):
         self.fitness = fitness

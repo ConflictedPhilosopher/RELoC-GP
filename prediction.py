@@ -53,6 +53,19 @@ class Prediction:
         self.vote = dict.fromkeys(predicted_labels)
         numerosity = dict.fromkeys(predicted_labels)
 
+        def update_value2(label, ref):
+            cl = popset[ref]
+            if cl.match_count > 0:
+                label_acc = {k: acc/cl.match_count for k, acc in cl.label_based.items()}
+            else:
+                label_acc = {k: cl.fitness for k in cl.prediction}
+            if self.vote[label]:
+                self.vote[label] += label_acc[label] * cl.numerosity
+                numerosity[label] += cl.numerosity
+            else:
+                self.vote[label] = label_acc[label] * cl.numerosity
+                numerosity[label] = cl.numerosity
+
         def update_value(label, ref):
             if self.vote[label]:
                 self.vote[label] += popset[ref].fitness * popset[ref].numerosity
@@ -61,7 +74,7 @@ class Prediction:
                 self.vote[label] = popset[ref].fitness * popset[ref].numerosity
                 numerosity[label] = popset[ref].numerosity
 
-        [update_value(label, ref) for ref in matchset for label in popset[ref].prediction]
+        [update_value2(label, ref) for ref in matchset for label in popset[ref].prediction]
         try:
             # max_vote = max(self.vote.values())
             self.vote = {k: v / numerosity[k] for k, v in self.vote.items()}
