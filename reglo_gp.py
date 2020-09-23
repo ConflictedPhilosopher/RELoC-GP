@@ -111,8 +111,8 @@ class REGLoGP(Prediction):
 
         self.timer.start_evaluation()
         self.population.pop_average_eval()
-        [test_evaluation, test_coverage] = self.evaluation()
-        [train_evaluation, train_coverage] = self.evaluation(False)
+        [test_evaluation, test_class_precision, test_coverage] = self.evaluation()
+        [train_evaluation, _, train_coverage] = self.evaluation(False)
         self.timer.stop_evaluation()
 
         reporting = Reporting(self.exp)
@@ -123,7 +123,7 @@ class REGLoGP(Prediction):
 
         print("Process Time (min): ", round(global_time, 5))
 
-        return [test_evaluation, self.track_to_plot]
+        return [test_evaluation, test_class_precision, self.track_to_plot]
 
     def train_iteration(self, sample):
         self.timer.start_matching()
@@ -158,7 +158,6 @@ class REGLoGP(Prediction):
         self.population.clear_sets()
 
     def evaluation(self, test=True):
-        multi_label_perf = dict()
         performance = Performance()
         vote_list = []
 
@@ -202,25 +201,16 @@ class REGLoGP(Prediction):
         [update_performance(sample) for sample in samples]
         performance.micro_average()
         performance.macro_average()
+        multi_label_perf = performance.get_report(samples.__len__())
+        class_precision = {}
+        for label in self.data.label_ref.keys():
+            class_measure = performance.class_based_measure[label]
+            class_precision[self.data.label_ref[label]] = class_measure['TP'] / (
+                    class_measure['TP'] + class_measure['FP'] + 1)
         """
         target_list = []
         performance.roc(vote_list, target_list)
         """
-        multi_label_perf['em'] = performance.exact_match_example / samples.__len__()
-        multi_label_perf['hl'] = performance.hamming_loss_example / samples.__len__()
-        multi_label_perf['acc'] = performance.accuracy_example / samples.__len__()
-        multi_label_perf['pr'] = performance.precision_example / samples.__len__()
-        multi_label_perf['re'] = performance.recall_example / samples.__len__()
-        multi_label_perf['f'] = performance.fscore_example / samples.__len__()
-        multi_label_perf['micro-f'] = performance.micro_fscore
-        multi_label_perf['macro-f'] = performance.macro_fscore
-        multi_label_perf['micro-pr'] = performance.micro_precision
-        multi_label_perf['macro-pr'] = performance.macro_precision
-        multi_label_perf['micro-re'] = performance.micro_recall
-        multi_label_perf['macro-re'] = performance.macro_recall
-        multi_label_perf['1e'] = performance.one_error_example / samples.__len__()
-        multi_label_perf['rl'] = performance.rank_loss_example / samples.__len__()
-        multi_label_perf['auc'] = performance.roc_auc
         sample_coverage = 1 - (self.no_match / samples.__len__())
 
-        return [multi_label_perf, sample_coverage]
+        return [multi_label_perf, class_precision, sample_coverage]
