@@ -11,19 +11,19 @@ DATA_DIR = "D:\Datasets"
 DATA_HEADER = "mit-csail"
 REPORT_PATH = "report"
 NO_FEATURES = 256
-NO_LABELS = 91
+NO_LABELS = 50
 GET_MLD_PROP = True
 
-REBOOT_MODEL = 0
-MAX_ITERATION = 10000
-MAX_CLASSIFIER = 6000
+REBOOT_MODEL = 1
+MAX_ITERATION = 500
+MAX_CLASSIFIER = 100
 PROB_HASH = 0.85
 TRACK_FREQ = 1000
-AVG_COUNT = 10
+AVG_COUNT = 1
 
 PREDICTION_METHOD = 2  # 1: max prediction - 2: aggregated prediction
 THRESHOLD = 1  # 1: score-based one-threshold - 2: rank-based rank-cut
-THETA = 0.05
+THETA = 0.5
 RANK_CUT = 1
 
 K = 2  # number of label clusters
