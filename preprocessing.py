@@ -9,6 +9,7 @@ from math import sqrt
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+from visualization import plot_bar
 from config import *
 
 
@@ -123,6 +124,7 @@ class Preprocessing:
         self.density = self.card / NO_LABELS
         counts = [data_complete[classs].sum() for classs in data_complete.columns[NO_FEATURES:-1]]
         self.class_count = dict(zip(list(data_complete.columns)[NO_FEATURES:-1], counts))
+        plot_bar(self.class_count, 'frequency')
         class_pi = [val / data_complete.__len__() for val in list(self.class_count.values())]
         imbalance_label = [max(class_pi) / val for val in class_pi]
         self.imbalance_mean = sum(imbalance_label) / NO_LABELS
