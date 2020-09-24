@@ -11,6 +11,7 @@ from scipy.sparse.csgraph import connected_components
 
 from hfps_clustering import density_based
 from classifier import Classifier
+from visualization import plot_graph
 from config import *
 
 
@@ -44,7 +45,7 @@ class GraphPart:
         self.classifiers = []
         self.label_clusters = []
 
-    def refine_prediction(self, matching_classifiers, it):
+    def refine_prediction(self, matching_classifiers, it, label_ref):
         self.label_clusters = []
         label_matrix = []
         self.classifiers = matching_classifiers
@@ -67,7 +68,8 @@ class GraphPart:
                     self.label_clusters.append(set(temp))
             else:
                 self.label_clusters = density_based(K, label_matrix, 1 - label_similarity, predicted_labels)
-
+            cluster_dict = {k:self.label_clusters[k] for k in range(self.label_clusters.__len__())}
+            plot_graph(cluster_dict, np.array(label_matrix), label_similarity, label_ref)
             new_classifiers = [self.breakdown_labelset(classifier, it) for classifier in self.classifiers if
                                classifier.prediction.__len__() > L_MIN]
             return new_classifiers

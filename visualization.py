@@ -5,6 +5,7 @@
 #
 # ------------------------------------------------------------------------------
 import os.path
+import random
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -50,36 +51,52 @@ def plot_bar(value_dict, title):
     plt.close()
 
 
-def plot_graph(label_clusters, sim_matrix):
+def plot_graph(label_clusters, label_matrix, sim_matrix, label_ref):
     labels = set()
-    labels = [labels.union(l) for l in label_clusters.values()]
-    G = nx.Graph()
+    for cl in label_clusters.values():
+        labels = labels.union(cl)
+    labels = list(labels)
+    graph = nx.Graph()
     edge_list = []
+
+    def same_cluster(l1, l2):
+        for cluster in label_clusters.values():
+            if l1 in cluster and l2 in cluster:
+                return True
+        return False
+
     for c1 in range(labels.__len__()):
         for c2 in range(c1 + 1, labels.__len__()):
-            edge_exists = np.dot(labels[:, c1], labels[:, c2]) > 0
-            if edge_exists:
-                edge_list.append((c1, c2))
+            edge_exists = np.dot(label_matrix[:, c1], label_matrix[:, c2]) > 0
+            if edge_exists and same_cluster(labels[c1], labels[c2]):
+                edge_list.append((labels[c1], labels[c2]))
                 w = sim_matrix[c1, c2]
-                G.add_weighted_edges_from([(c1, c2, w)])
+                graph.add_weighted_edges_from([(labels[c1], labels[c2], w)])
             else:
-                G.add_node(c1)
-                G.add_node(c2)
+                graph.add_node(labels[c1])
+                graph.add_node(labels[c2])
 
     fig1, ax1 = plt.subplots()
     ax1.set_title('Label similarity graph')
-    pos = nx.spring_layout(G)
+    try:
+        pos = nx.planar_layout(graph)
+    except nx.NetworkXException:
+        pos = nx.spring_layout(graph)
+    node_color = ['g', 'm', 'c', 'b', '']
     for k in label_clusters.keys():
-        nx.draw_networkx_nodes(G, pos,
-                               node_color=np.random.rand(3, ),
-                               nodelist=label_clusters[k],
-                               )
+        nx.draw_networkx_nodes(graph, pos,
+                               node_color=node_color[k],
+                               nodelist=list(label_clusters[k]),
+                               node_size=300)
 
-    nx.draw_networkx_labels(G, pos, labels, font_size=12)
-    nx.draw_networkx_edges(G, pos, edge_list=edge_list, width=1, alpha=0.5)
+    edge_weights = nx.get_edge_attributes(graph, 'weight')
+    edge_weights = {k: round(v, 3) for k, v in edge_weights.items()}
+    names = {k: label_ref[k] for k in labels}
+    nx.draw_networkx_labels(graph, pos, names, font_size=11)
+    nx.draw_networkx_edges(graph, pos, edge_list=edge_list, width=1, alpha=0.5)
+    nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_weights)
     plt.show()
-    # plt.savefig(os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, 'similarity-graph.png'))
-    # plt.close()
+    plt.close()
 
 
 def plot_image(image_id, labels, prediction):
