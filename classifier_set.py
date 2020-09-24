@@ -91,10 +91,10 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
                          match(classifier, state, self.dtypes)]
 
-        if self.matchset.__len__() > 5:  # self.k:
+        if self.matchset.__len__() > self.k:
             d = [distance(self.popset[idx], state) for idx in self.matchset]
             d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
-            knn_matchset = [self.matchset[idx] for idx in d_sort_index[:5]]  # [:self.k]]
+            knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
             self.matchset = knn_matchset
 
     def make_correctset(self, target):
@@ -420,7 +420,6 @@ class ClassifierSets(ClassifierMethods, GraphPart):
 # update sets
     def update_sets(self, target):
         m_size = sum([self.popset[ref].numerosity for ref in self.matchset])
-        [self.popset[ref].update_correct() for ref in self.correctset]
         [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
 
     def clear_sets(self):
