@@ -15,10 +15,10 @@ class ClassifierMethods:
         if classifier.fitness >= ave_fitness * DELTA or classifier.match_count < THETA_DEL:
             classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity
         elif classifier.fitness == INIT_FITNESS:
-            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity**2 * ave_fitness / \
+            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity ** 2 * ave_fitness / \
                                        INIT_FITNESS
         else:
-            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity**2 * ave_fitness / \
+            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity ** 2 * ave_fitness / \
                                        classifier.fitness
         return classifier.deletion_vote
 
@@ -57,7 +57,8 @@ class ClassifierMethods:
                 if classifier1.condition[cl1_attributes.index(ref)][0] < \
                         classifier2.condition[cl2_attributes.index(ref)][0]:
                     return False
-                if classifier1.condition[cl1_attributes.index(ref)][1] > classifier2.condition[cl2_attributes.index(ref)][1]:
+                if classifier1.condition[cl1_attributes.index(ref)][1] > \
+                        classifier2.condition[cl2_attributes.index(ref)][1]:
                     return False
         return True
 
@@ -76,11 +77,10 @@ class ClassifierMethods:
             classifier_string += ","
         prediction_string = ";".join([str(label) for label in classifier.prediction])
         classifier_string += (prediction_string + ",")
-        label_precision = ";".join([str(label)+':'+str(pr) for label, pr in classifier.label_based.items()])
+        label_precision = ";".join([str(label) + ':' + str(pr) for label, pr in classifier.label_based.items()])
         classifier_string += (label_precision + ",")
         parameter_string = str("%.4f" % classifier.fitness) + "," + \
             str("%.4f" % classifier.loss) + "," + \
-            str("%d" % classifier.correct_count) + "," + \
             str("%d" % classifier.numerosity) + "," + \
             str("%d" % classifier.match_count) + "," + \
             str("%.4f" % classifier.ave_matchset_size) + "," + \
@@ -92,3 +92,4 @@ class ClassifierMethods:
 
 if __name__ == "__main__":
     print('nothing goes here!')
+    # str("%d" % classifier.correct_count) + "," +
