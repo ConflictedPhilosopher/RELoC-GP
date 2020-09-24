@@ -17,7 +17,6 @@ class Classifier:
         self.parent_prediction = []
         self.numerosity = 1
         self.match_count = 0
-        self.correct_count = 0
         self.loss = 0.0
         self.label_based = {}
         self.fitness = INIT_FITNESS
@@ -60,7 +59,7 @@ class Classifier:
         self.ga_time = it
         self.fitness = classifier_old.fitness
         self.loss = classifier_old.loss
-        self.label_based = classifier_old.label_based
+        self.label_based = {k: 0 for k in self.prediction}
 
     def classifier_reboot(self, classifier_info, dtypes):
         classifier_info = classifier_info.to_list()
@@ -83,14 +82,11 @@ class Classifier:
         self.prediction = set(int(n) for n in classifier_info[NO_FEATURES].split(";"))
         label_precisions = classifier_info[NO_FEATURES + 1]
         self.label_based = {int(kv.split(":")[0]): float(kv.split(":")[1]) for kv in label_precisions.split(";")}
-        self.fitness, self.loss, self.correct_count, self.numerosity, self.match_count, self.ave_matchset_size, \
+        self.fitness, self.loss, self.numerosity, self.match_count, self.ave_matchset_size, \
         self.init_time, self.ga_time = classifier_info[NO_FEATURES + 2:]
 
     def update_numerosity(self, num):
         self.numerosity += num
-
-    def update_correct(self):
-        self.correct_count += 1
 
     def update_ga_time(self, time):
         self.ga_time = time
@@ -123,9 +119,6 @@ class Classifier:
 
     def set_fitness(self, fitness):
         self.fitness = fitness
-
-    def set_loss(self, loss):
-        self.loss = loss
 
 
 if __name__ == "__main__":
