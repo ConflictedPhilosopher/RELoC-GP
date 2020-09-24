@@ -21,7 +21,7 @@ class RebootModel():
         try:
             file_name = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "model_" + str(self.exp) + ".csv")
             model = pd.read_csv(file_name)
-        except Exception as inst:
+        except FileNotFoundError as inst:
             print(type(inst))
             print(inst.args)
             print(inst)
