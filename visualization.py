@@ -8,6 +8,7 @@ import os.path
 
 import numpy as np
 import matplotlib.pyplot as plt
+import networkx as nx
 
 from config import *
 
@@ -45,12 +46,40 @@ def plot_bar(value_dict, title):
             linestyle='-.', linewidth=0.5,
             alpha=0.2)
     ax.set_title('class-specific ' + title, loc='right', )
+    plt.savefig(os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, title+'.png'))
+    plt.close()
+
+
+def plot_graph(label_clusters, sim_matrix):
+    labels = set()
+    labels = [labels.union(l) for l in label_clusters.values()]
+    G = nx.Graph()
+    edge_list = []
+    for c1 in range(labels.__len__()):
+        for c2 in range(c1 + 1, labels.__len__()):
+            edge_exists = np.dot(labels[:, c1], labels[:, c2]) > 0
+            if edge_exists:
+                edge_list.append((c1, c2))
+                w = sim_matrix[c1, c2]
+                G.add_weighted_edges_from([(c1, c2, w)])
+            else:
+                G.add_node(c1)
+                G.add_node(c2)
+
+    fig1, ax1 = plt.subplots()
+    ax1.set_title('Label similarity graph')
+    pos = nx.spring_layout(G)
+    for k in label_clusters.keys():
+        nx.draw_networkx_nodes(G, pos,
+                               node_color=np.random.rand(3, ),
+                               nodelist=label_clusters[k],
+                               )
+
+    nx.draw_networkx_labels(G, pos, labels, font_size=12)
+    nx.draw_networkx_edges(G, pos, edge_list=edge_list, width=1, alpha=0.5)
     plt.show()
-
-
-def plot_graph(labels, sim_matrix):
-    print('label graph...')
-    print(labels, sim_matrix)
+    # plt.savefig(os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, 'similarity-graph.png'))
+    # plt.close()
 
 
 def plot_image(image_id, labels, prediction):
