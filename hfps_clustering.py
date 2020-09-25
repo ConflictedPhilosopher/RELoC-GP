@@ -47,7 +47,7 @@ def Pseduo_Peaks(DisC, label, fitness, StdF, gamma):
 
         indices = NeighborSearch(DisC, label, PeakIndices[i], marked, NeiRad)
 
-        C_Indices[indices] = PeakIndices[i]
+        # C_Indices[indices] = PeakIndices[i]
         if len(indices) == 0:
             indices = [PeakIndices[i]]
 
@@ -189,19 +189,26 @@ def density_based(K, label, DisC, label_ref=None):
     # Pseduo Clusters Infomormation Extraction
     PseDuo = PeakIndices  # Pseduo Feature Cluster centers
     PseDuoF = Pfitness  # Pseduo Feature Clusters fitness values
+    PseDuoFIndice = C_Indices  # Cluster indices before merge
     # -------------Check for possible merges among pseduo clusters-----------#
 
     [FCluster, Ffitness, C_Indices] = Pseduo_Evolve(DisC, PseDuo, PseDuoF, C_Indices, label, fitness, StdF, gamma, K)
 
+    cluster_info1 = {}  # Cluster information before merging
+    cluster_info2 = {}  # Cluster information after merging
+
+    for Pi in range(len(PseDuo)):
+        temp1 = np.where(PseDuoFIndice == PseDuo[Pi])[0]
+        temp1 = temp1.astype(int)
+        cluster_info1[Pi] = label_ref[temp1].tolist()
+
     SF = FCluster
-    cluster_info = {}
     if len(SF) < K:
-        return cluster_info
+        return cluster_info1, cluster_info2
 
     for i in range(len(SF)):
-        temp = np.where(C_Indices == SF[i])
         temp2 = np.where(C_Indices == SF[i])[0]
         temp2 = temp2.astype(int)
-        cluster_info[i] = label_ref[temp2].tolist()
+        cluster_info2[i] = label_ref[temp2].tolist()
 
-    return list(cluster_info.values())
+    return list(cluster_info1.values()),list(cluster_info2.values())
