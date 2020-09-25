@@ -51,11 +51,11 @@ def plot_bar(value_dict, title):
     plt.close()
 
 
-def plot_graph(label_clusters, label_matrix, sim_matrix, label_ref):
+def plot_graph(label_clusters, sim_matrix, label_ref):
     labels = set()
     for cl in label_clusters.values():
         labels = labels.union(cl)
-    labels = list(labels)
+    labels = sorted(list(labels))
     graph = nx.Graph()
     edge_list = []
 
@@ -67,10 +67,9 @@ def plot_graph(label_clusters, label_matrix, sim_matrix, label_ref):
 
     for c1 in range(labels.__len__()):
         for c2 in range(c1 + 1, labels.__len__()):
-            edge_exists = np.dot(label_matrix[:, c1], label_matrix[:, c2]) > 0
-            if edge_exists and same_cluster(labels[c1], labels[c2]):
+            w = sim_matrix[c1, c2]
+            if w > 0 and same_cluster(labels[c1], labels[c2]):
                 edge_list.append((labels[c1], labels[c2]))
-                w = sim_matrix[c1, c2]
                 graph.add_weighted_edges_from([(labels[c1], labels[c2], w)])
             else:
                 graph.add_node(labels[c1])
@@ -82,7 +81,7 @@ def plot_graph(label_clusters, label_matrix, sim_matrix, label_ref):
         pos = nx.planar_layout(graph)
     except nx.NetworkXException:
         pos = nx.spring_layout(graph)
-    node_color = ['g', 'm', 'c', 'b', '']
+    node_color = ['g', 'm', 'c', 'b', 'k']
     for k in label_clusters.keys():
         nx.draw_networkx_nodes(graph, pos,
                                node_color=node_color[k],
@@ -92,11 +91,11 @@ def plot_graph(label_clusters, label_matrix, sim_matrix, label_ref):
     edge_weights = nx.get_edge_attributes(graph, 'weight')
     edge_weights = {k: round(v, 3) for k, v in edge_weights.items()}
     names = {k: label_ref[k] for k in labels}
+    names = {k: k for k in labels}
     nx.draw_networkx_labels(graph, pos, names, font_size=11)
     nx.draw_networkx_edges(graph, pos, edge_list=edge_list, width=1, alpha=0.5)
     nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_weights)
     plt.show()
-    plt.close()
 
 
 def plot_image(image_id, labels, prediction):
