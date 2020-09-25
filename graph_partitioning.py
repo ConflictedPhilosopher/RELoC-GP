@@ -19,7 +19,6 @@ def calculate_similarity(label_matrix, measure=0):
     if measure == 0:  # cosine similarity
         label_matrix_sparse = sparse.csr_matrix(np.array(label_matrix).transpose())
         return cosine_similarity(label_matrix_sparse)
-
     elif measure == 1:  # Hamming distance-based similarity
         similarity = np.zeros([NO_LABELS, NO_LABELS])
         for i in range(NO_LABELS):
@@ -46,30 +45,40 @@ class GraphPart:
         self.label_clusters = []
 
     def refine_prediction(self, matching_classifiers, it, label_ref):
+
+        for cl in matching_classifiers:
+            print({k: round(v/cl.match_count, 3) for k, v in cl.label_based.items()})
+
         self.label_clusters = []
         label_matrix = []
         self.classifiers = matching_classifiers
         if any([classifier.prediction.__len__() > 1 for classifier in self.classifiers]):
             predicted_labels = sorted(list(set().union(*[classifier.prediction for classifier in self.classifiers])))
 
-            def label_vector(prediction):
-                return [1 if label in prediction else 0 for label in predicted_labels]
+            def label_vector(classifier):
+                temp = [min(classifier.label_based[label]/classifier.match_count, INIT_FITNESS)
+                        if label in classifier.prediction else 0 for label in predicted_labels]
+                # return [1 if label in classifier.prediction else 0 for label in predicted_labels]
+                return temp
 
             for classifier in matching_classifiers:
                 for idx in range(classifier.numerosity):
-                    label_matrix.append(label_vector(classifier.prediction))
+                    label_matrix.append(label_vector(classifier))
             label_similarity = calculate_similarity(label_matrix)
+
             n_connected, label_connected = connected_components(label_similarity)
 
             if n_connected > 1:
                 for c in range(n_connected):
                     temp = [predicted_labels[node] for node in range(predicted_labels.__len__())
-                                if label_connected[node] == c]
+                            if label_connected[node] == c]
                     self.label_clusters.append(set(temp))
             else:
-                self.label_clusters = density_based(K, label_matrix, 1 - label_similarity, predicted_labels)
-            cluster_dict = {k:self.label_clusters[k] for k in range(self.label_clusters.__len__())}
-            plot_graph(cluster_dict, np.array(label_matrix), label_similarity, label_ref)
+                label_clusters_unmerged, self.label_clusters = density_based(K, label_matrix, 1 - label_similarity, predicted_labels)
+
+            cluster_dict = {k: self.label_clusters[k] for k in range(self.label_clusters.__len__())}
+            plot_graph(cluster_dict, label_similarity, label_ref)
+
             new_classifiers = [self.breakdown_labelset(classifier, it) for classifier in self.classifiers if
                                classifier.prediction.__len__() > L_MIN]
             return new_classifiers
@@ -77,7 +86,7 @@ class GraphPart:
             return
 
     def breakdown_labelset(self, classifier, it):
-        prediction = classifier.prediction
+        prediction = set(classifier.label_based.keys())
         new_classifiers = []
         label_subsets = [prediction.intersection(cluster) for cluster in self.label_clusters if
                          prediction.intersection(cluster).__len__() > 0]
@@ -88,6 +97,7 @@ class GraphPart:
                 new_classifier = Classifier()
                 new_classifier.classifier_copy(classifier, it)
                 new_classifier.prediction = cluster
+                new_classifier.label_based = {k: 0 for k in cluster}
                 new_classifier.parent_prediction.append(prediction)
                 new_classifier.set_fitness(INIT_FITNESS)
                 new_classifiers.append(new_classifier)
