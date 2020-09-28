@@ -15,6 +15,7 @@ from timer import Timer
 from performance import Performance
 from reporting import Reporting
 from reboot_model import RebootModel
+from visualization import plot_image, plot_graph
 
 
 class REGLoGP(Prediction):
@@ -76,14 +77,16 @@ class REGLoGP(Prediction):
                                                                          self.population.matchset, random.randint)
                         else:
                             if THRESHOLD == 1:
-                                label_prediction, _ = Prediction.one_threshold(self, self.population.popset, self.population.matchset)
+                                label_prediction, _ = Prediction.one_threshold(self, self.population.popset,
+                                                                               self.population.matchset)
                             elif THRESHOLD == 2:
-                                label_prediction, _ = Prediction.rank_cut(self, self.population.popset, self.population.matchset)
+                                label_prediction, _ = Prediction.rank_cut(self, self.population.popset,
+                                                                          self.population.matchset)
                             else:
                                 print("prediction threshold method unidentified!")
 
                         fscore += performance.fscore(label_prediction, sample[1])
-                return fscore/samples.__len__()
+                return fscore / samples.__len__()
 
             if (self.iteration % TRACK_FREQ) == 0 and self.iteration > 0:
                 # print('Iteration ', self.iteration)
@@ -99,10 +102,10 @@ class REGLoGP(Prediction):
 
                 self.track_to_plot.append([self.iteration, train_fscore, test_fscore])
 
-                if float(self.tracked_loss/TRACK_FREQ) - loss_old > 0.1:
+                if float(self.tracked_loss / TRACK_FREQ) - loss_old > 0.1:
                     stop_training = True
                 else:
-                    loss_old = self.tracked_loss/TRACK_FREQ
+                    loss_old = self.tracked_loss / TRACK_FREQ
                 self.tracked_loss = 0
 
             self.iteration += 1
@@ -147,7 +150,11 @@ class REGLoGP(Prediction):
             self.timer.start_selection()
             popset = self.population.popset
             if self.population.matchset.__len__() > 1:
-                self.population.apply_partitioning(self.iteration, self.data.label_ref)
+                self.population.apply_partitioning(self.iteration)
+                # print('target ', sample[1])
+                # cluster_dict = {k: self.population.label_clusters[k] for k in
+                #                 range(self.population.label_clusters.__len__())}
+                # plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
             [popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
             self.population.apply_ga(self.iteration, sample[0])
             self.timer.stop_selection()
@@ -187,14 +194,23 @@ class REGLoGP(Prediction):
                                                                  random.randint)
                 else:
                     if THRESHOLD == 1:
-                        label_prediction, vote = Prediction.one_threshold(self, self.population.popset, self.population.matchset)
+                        label_prediction, vote = Prediction.one_threshold(self, self.population.popset,
+                                                                          self.population.matchset)
                     elif THRESHOLD == 2:
-                        label_prediction, vote = Prediction.rank_cut(self, self.population.popset, self.population.matchset)
+                        label_prediction, vote = Prediction.rank_cut(self, self.population.popset,
+                                                                     self.population.matchset)
                     else:
                         print("prediction threshold method unidentified!")
 
                 performance.update_example_based(vote, label_prediction, sample[1])
                 performance.update_class_based(label_prediction, sample[1])
+
+                if DEMO:
+                    self.population.build_graph([self.population.popset[idx] for idx in self.population.matchset])
+                    cluster_dict = {0: self.population.predicted_labels}
+                    plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
+                    plot_image(sample[2], sample[1], vote, self.data.label_ref)
+
             vote_list.append(vote)
             self.population.clear_sets()
 
