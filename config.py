@@ -15,7 +15,7 @@ NO_LABELS = 50
 GET_MLD_PROP = True
 
 REBOOT_MODEL = 1
-MAX_ITERATION = 500
+MAX_ITERATION = 0
 MAX_CLASSIFIER = 100
 PROB_HASH = 0.85
 TRACK_FREQ = 1000
@@ -28,6 +28,8 @@ RANK_CUT = 1
 
 K = 2  # number of label clusters
 L_MIN = 2
+
+DEMO = True
 
 # ------------------------------------------------------------------------------
 INIT_FITNESS = 0.01
