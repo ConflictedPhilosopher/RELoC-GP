@@ -100,8 +100,9 @@ class ClassifierSets(ClassifierMethods, GraphPart):
     def make_correctset(self, target):
         self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
 
-    def apply_partitioning(self, it, label_ref):
-        new_classifiers = self.refine_prediction([self.popset[idx] for idx in self.matchset], it, label_ref)
+    def apply_partitioning(self, it):
+        self.build_graph([self.popset[idx] for idx in self.matchset])
+        new_classifiers = self.refine_prediction(it)
         try:
             count = sum([new_list.__len__() for new_list in new_classifiers])
         except TypeError:
