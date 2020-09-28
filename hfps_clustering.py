@@ -163,17 +163,30 @@ def Pseduo_Merge(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, gam
 
 
 def cluster_assign(DisC, P_indices, F_indices):
+    # for i in range(len(F_indices)):
+    #     dist = []
+    #     for j in range(len(P_indices)):
+    #         dist.append(DisC[F_indices[i], P_indices[j]])
+    #     F_indices[i] = P_indices[np.argmin(dist)]
+    # return F_indices
     for i in range(len(F_indices)):
-        dist = []
-        for j in range(len(P_indices)):
-            dist.append(DisC[F_indices[i], P_indices[j]])
-        F_indices[i] = P_indices[np.argmin(dist)]
+        if i in P_indices:
+            F_indices[i] = i
+            continue
+        else:
+            dist = []
+            for j in range(len(P_indices)):
+                dist.append(DisC[F_indices[i], P_indices[j]])
+            F_indices[i] = P_indices[np.argmin(dist)]
     return F_indices
 
 
 # --------------------------------------------------------------------------------------------------------------
 def density_based(K, label, DisC, label_ref=None):
     StdF = max(np.max(DisC), 1)
+    if not np.any(DisC):
+        StdF = 1
+
     if label_ref == None:
         label_ref = np.arange(0, np.shape(DisC)[0])
     else:
@@ -186,29 +199,34 @@ def density_based(K, label, DisC, label_ref=None):
     [PeakIndices, Pfitness, C_Indices] = Pseduo_Peaks(DisC, label, fitness, StdF, gamma)
     fitness = oldfitness
 
+    # -----------------------------Modified Section---------------------------#
     # Pseduo Clusters Infomormation Extraction
     PseDuo = PeakIndices  # Pseduo Feature Cluster centers
     PseDuoF = Pfitness  # Pseduo Feature Clusters fitness values
     PseDuoFIndice = C_Indices  # Cluster indices before merge
+
     # -------------Check for possible merges among pseduo clusters-----------#
 
     [FCluster, Ffitness, C_Indices] = Pseduo_Evolve(DisC, PseDuo, PseDuoF, C_Indices, label, fitness, StdF, gamma, K)
 
+    SF = FCluster
+
     cluster_info1 = {}  # Cluster information before merging
     cluster_info2 = {}  # Cluster information after merging
 
+    # Extract the cluster information before merging
     for Pi in range(len(PseDuo)):
         temp1 = np.where(PseDuoFIndice == PseDuo[Pi])[0]
         temp1 = temp1.astype(int)
         cluster_info1[Pi] = label_ref[temp1].tolist()
 
-    SF = FCluster
     if len(SF) < K:
         return cluster_info1, cluster_info2
 
+    # Extract the cluster information after merging
     for i in range(len(SF)):
         temp2 = np.where(C_Indices == SF[i])[0]
         temp2 = temp2.astype(int)
         cluster_info2[i] = label_ref[temp2].tolist()
 
-    return list(cluster_info1.values()),list(cluster_info2.values())
+    return list(cluster_info1.values()), list(cluster_info2.values())
