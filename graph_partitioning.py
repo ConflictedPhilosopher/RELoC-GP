@@ -43,47 +43,45 @@ class GraphPart:
     def __init__(self):
         self.classifiers = []
         self.label_clusters = []
+        self.label_similarity = None
+        self.predicted_labels = []
+        self.label_matrix = []
 
-    def refine_prediction(self, matching_classifiers, it, label_ref):
-
-        for cl in matching_classifiers:
-            print({k: round(v/cl.match_count, 3) for k, v in cl.label_based.items()})
-
+    def build_graph(self, matching_classifiers):
         self.label_clusters = []
-        label_matrix = []
+        self.label_matrix = []
         self.classifiers = matching_classifiers
         if any([classifier.prediction.__len__() > 1 for classifier in self.classifiers]):
-            predicted_labels = sorted(list(set().union(*[classifier.prediction for classifier in self.classifiers])))
+            self.predicted_labels = sorted(list(set().union(*[classifier.prediction for classifier in self.classifiers])))
 
             def label_vector(classifier):
-                temp = [min(classifier.label_based[label]/classifier.match_count, INIT_FITNESS)
-                        if label in classifier.prediction else 0 for label in predicted_labels]
-                # return [1 if label in classifier.prediction else 0 for label in predicted_labels]
-                return temp
+                return [max(classifier.label_based[label] / classifier.match_count, INIT_FITNESS)
+                        if label in classifier.prediction else 0 for label in self.predicted_labels]
 
             for classifier in matching_classifiers:
-                for idx in range(classifier.numerosity):
-                    label_matrix.append(label_vector(classifier))
-            label_similarity = calculate_similarity(label_matrix)
-
-            n_connected, label_connected = connected_components(label_similarity)
-
-            if n_connected > 1:
-                for c in range(n_connected):
-                    temp = [predicted_labels[node] for node in range(predicted_labels.__len__())
-                            if label_connected[node] == c]
-                    self.label_clusters.append(set(temp))
-            else:
-                label_clusters_unmerged, self.label_clusters = density_based(K, label_matrix, 1 - label_similarity, predicted_labels)
-
-            cluster_dict = {k: self.label_clusters[k] for k in range(self.label_clusters.__len__())}
-            plot_graph(cluster_dict, label_similarity, label_ref)
-
-            new_classifiers = [self.breakdown_labelset(classifier, it) for classifier in self.classifiers if
-                               classifier.prediction.__len__() > L_MIN]
-            return new_classifiers
+                if classifier.match_count > 0:
+                    for idx in range(classifier.numerosity):
+                        self.label_matrix.append(label_vector(classifier))
+            self.label_similarity = calculate_similarity(self.label_matrix)
         else:
             return
+
+    def refine_prediction(self, it):
+        self.label_clusters = []
+        self.label_similarity = np.where(self.label_similarity > 0.7, self.label_similarity, 0)
+        n_connected, label_connected = connected_components(self.label_similarity)
+        if n_connected > 1:
+            for c in range(n_connected):
+                temp = [self.predicted_labels[node] for node in range(self.predicted_labels.__len__())
+                        if label_connected[node] == c]
+                self.label_clusters.append(set(temp))
+        else:
+            label_clusters_unmerged, self.label_clusters = density_based(K, self.label_matrix, 1 - self.label_similarity,
+                                                                         self.predicted_labels)
+
+        new_classifiers = [self.breakdown_labelset(classifier, it) for classifier in self.classifiers if
+                           classifier.prediction.__len__() > L_MIN]
+        return new_classifiers
 
     def breakdown_labelset(self, classifier, it):
         prediction = set(classifier.label_based.keys())
