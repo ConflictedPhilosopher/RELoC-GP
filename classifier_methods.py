@@ -12,11 +12,8 @@ class ClassifierMethods:
         self.dtypes = dtypes
 
     def get_deletion_vote(self, classifier, ave_fitness):
-        if classifier.fitness >= ave_fitness * DELTA or classifier.match_count < THETA_DEL:
+        if classifier.fitness >= ave_fitness * DELTA * classifier.numerosity or classifier.match_count < THETA_DEL:
             classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity
-        elif classifier.fitness == INIT_FITNESS:
-            classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity ** 2 * ave_fitness / \
-                                       INIT_FITNESS
         else:
             classifier.deletion_vote = classifier.ave_matchset_size * classifier.numerosity ** 2 * ave_fitness / \
                                        classifier.fitness
@@ -41,7 +38,9 @@ class ClassifierMethods:
         return False
 
     def is_subsumer(self, classifier1):
-        if classifier1.match_count > THETA_SUB and classifier1.loss < LOSS_SUB:
+        acc = sum([acc / classifier1.match_count for acc in classifier1.label_based.values()]) \
+                    / float(classifier1.prediction.__len__())
+        if classifier1.match_count > THETA_SUB and acc > ACC_SUB:
             return True
         return False
 
