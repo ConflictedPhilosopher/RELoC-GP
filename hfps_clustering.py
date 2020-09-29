@@ -62,11 +62,10 @@ def Pseduo_Peaks(DisC, label, fitness, StdF, gamma):
 
         # Check whether all of samples has been assigned a pseduo cluster label
         if np.sum(co) >= (len(F)):
-            C_Indices = cluster_assign(DisC, PeakIndices, C_Indices)
             break
 
         i = i + 1  # Expand the size of the pseudo cluster set by 1
-    return PeakIndices, Pfitness, C_Indices
+    return PeakIndices, Pfitness
 
 
 def NeighborSearch(DisC, label, P_indice, marked, radius):
@@ -196,18 +195,20 @@ def density_based(K, label, DisC, label_ref=None):
     fitness = fitness_cal(DisC, Nc, label, StdF, gamma)
     oldfitness = np.copy(fitness)
 
-    [PeakIndices, Pfitness, C_Indices] = Pseduo_Peaks(DisC, label, fitness, StdF, gamma)
+    PeakIndices, Pfitness = Pseduo_Peaks(DisC, label, fitness, StdF, gamma)
     fitness = oldfitness
 
     # -----------------------------Modified Section---------------------------#
     # Pseduo Clusters Infomormation Extraction
     PseDuo = PeakIndices  # Pseduo Feature Cluster centers
     PseDuoF = Pfitness  # Pseduo Feature Clusters fitness values
-    PseDuoFIndice = C_Indices  # Cluster indices before merge
+    PseDuoFIndice = np.arange(0, Nc)  # Cluster indices before merge
+    PseDuoFIndice = cluster_assign(DisC, PeakIndices, PseDuoFIndice)
+    C_Indices = np.copy(PseDuoFIndice)
 
     # -------------Check for possible merges among pseduo clusters-----------#
 
-    [FCluster, Ffitness, C_Indices] = Pseduo_Evolve(DisC, PseDuo, PseDuoF, C_Indices, label, fitness, StdF, gamma, K)
+    [FCluster, _, C_Indices] = Pseduo_Evolve(DisC, PseDuo, PseDuoF, C_Indices, label, fitness, StdF, gamma, K)
 
     SF = FCluster
 
