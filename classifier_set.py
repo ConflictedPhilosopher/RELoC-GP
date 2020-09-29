@@ -100,9 +100,9 @@ class ClassifierSets(ClassifierMethods, GraphPart):
     def make_correctset(self, target):
         self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
 
-    def apply_partitioning(self, it):
+    def apply_partitioning(self, it, target):
         self.build_graph([self.popset[idx] for idx in self.matchset])
-        new_classifiers = self.refine_prediction(it)
+        new_classifiers = self.refine_prediction(it, target)
         try:
             count = sum([new_list.__len__() for new_list in new_classifiers])
         except TypeError:
@@ -167,7 +167,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.correctset = correctset_copy
 
 # genetic algorithm methods
-    def apply_ga(self, iteration, state):
+    def apply_ga(self, iteration, state, data):
         changed0 = False
 
         if self.correctset.__len__() > 1:
@@ -195,7 +195,10 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             offspring2.set_fitness(FITNESS_RED * offspring2.fitness)
 
         if changed0 or changed1 or changed2:
-            self.insert_discovered_classifier(offspring1, offspring2, parent1, parent2)
+            if self.coverage(offspring1, data):
+                self.insert_discovered_classifier(offspring1,parent1, parent2)
+            if self.coverage(offspring2, data):
+                self.insert_discovered_classifier(offspring2, parent1, parent2)
 
     def selection(self, iteration):
         fitness = [self.popset[i].fitness for i in self.correctset]
@@ -345,15 +348,12 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             self.popset.append(classifier)
         self.micro_pop_size += 1
 
-    def insert_discovered_classifier(self, offspring1, offspring2, parent1, parent2):
+    def insert_discovered_classifier(self, offspring, parent1, parent2):
         if DO_SUBSUMPTION:
-            if offspring1.specified_atts.__len__() > 0:
-                self.subsume_into_parents(offspring1, parent1, parent2)
-            if offspring2.specified_atts.__len__() > 0:
-                self.subsume_into_parents(offspring2, parent1, parent2)
+            if offspring.specified_atts.__len__() > 0:
+                self.subsume_into_parents(offspring, parent1, parent2)
         else:
-            self.insert_classifier_pop(offspring1)
-            self.insert_classifier_pop(offspring2)
+            self.insert_classifier_pop(offspring)
 
     def get_identical(self, classifier, search_matchset=False):
         if search_matchset:
@@ -441,6 +441,11 @@ class ClassifierSets(ClassifierMethods, GraphPart):
 
     def pop_compaction(self):
         self.popset = [classifier for classifier in self.popset if classifier.match_count > 0]
+
+    def coverage(self, classifier, data):
+        for sample in data:
+            if match(classifier, sample[0], self.dtypes):
+                return True
 
 # other methods
     def get_pop_tracking(self):
