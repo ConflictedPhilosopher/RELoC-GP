@@ -150,13 +150,13 @@ class REGLoGP(Prediction):
             self.timer.start_selection()
             popset = self.population.popset
             if self.population.matchset.__len__() > 1:
-                self.population.apply_partitioning(self.iteration)
+                self.population.apply_partitioning(self.iteration, sample[1])
                 # print('target ', sample[1])
                 # cluster_dict = {k: self.population.label_clusters[k] for k in
                 #                 range(self.population.label_clusters.__len__())}
                 # plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
             [popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
-            self.population.apply_ga(self.iteration, sample[0])
+            self.population.apply_ga(self.iteration, sample[0], self.data.data_train_list)
             self.timer.stop_selection()
 
         self.timer.start_deletion()
