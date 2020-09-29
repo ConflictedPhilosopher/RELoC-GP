@@ -66,7 +66,7 @@ class GraphPart:
         else:
             return
 
-    def refine_prediction(self, it):
+    def refine_prediction(self, it, target):
         self.label_clusters = []
         self.label_similarity = np.where(self.label_similarity > 0.7, self.label_similarity, 0)
         n_connected, label_connected = connected_components(self.label_similarity)
@@ -79,11 +79,11 @@ class GraphPart:
             label_clusters_unmerged, self.label_clusters = density_based(K, self.label_matrix, 1 - self.label_similarity,
                                                                          self.predicted_labels)
 
-        new_classifiers = [self.breakdown_labelset(classifier, it) for classifier in self.classifiers if
+        new_classifiers = [self.breakdown_labelset(classifier, it, target) for classifier in self.classifiers if
                            classifier.prediction.__len__() > L_MIN]
         return new_classifiers
 
-    def breakdown_labelset(self, classifier, it):
+    def breakdown_labelset(self, classifier, it, target):
         prediction = set(classifier.label_based.keys())
         new_classifiers = []
         label_subsets = [prediction.intersection(cluster) for cluster in self.label_clusters if
@@ -95,7 +95,8 @@ class GraphPart:
                 new_classifier = Classifier()
                 new_classifier.classifier_copy(classifier, it)
                 new_classifier.prediction = cluster
-                new_classifier.label_based = {k: 0 for k in cluster}
+                new_classifier.label_based = {k: 1 if k in cluster.intersection(target) else 0 for k in cluster}
+                new_classifier.match_count = 1
                 new_classifier.parent_prediction.append(prediction)
                 new_classifier.set_fitness(INIT_FITNESS)
                 new_classifiers.append(new_classifier)
