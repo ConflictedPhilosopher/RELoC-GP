@@ -116,7 +116,8 @@ class ClassifierSets(ClassifierMethods, GraphPart):
                 self.remove_from_matchset(idx - i)
                 self.remove_from_correctset(idx - i)
                 i += 1
-            [self.correctset.append(self.popset.__len__() - 1 - cc) for cc in range(count)]
+            [self.correctset.append(self.popset.__len__() - 1 - cc) for cc in range(count)
+             if self.popset[self.popset.__len__() - 1 - cc].prediction.intersection(target).__len__() > 0]
             self.micro_pop_size -= new_classifiers.__len__()
         else:
             pass
@@ -196,7 +197,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
 
         if changed0 or changed1 or changed2:
             if self.coverage(offspring1, data):
-                self.insert_discovered_classifier(offspring1,parent1, parent2)
+                self.insert_discovered_classifier(offspring1, parent1, parent2)
             if self.coverage(offspring2, data):
                 self.insert_discovered_classifier(offspring2, parent1, parent2)
 
