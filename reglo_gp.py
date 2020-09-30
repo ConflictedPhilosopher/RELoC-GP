@@ -153,7 +153,7 @@ class REGLoGP(Prediction):
                 self.timer.start_label_partition()
                 self.population.apply_partitioning(self.iteration, sample[1])
                 self.timer.stop_label_partition()
-                # print('target ', sample[1])
+                # print('target ', [self.data.label_ref[label] for label in sample[1]])
                 # cluster_dict = {k: self.population.label_clusters[k] for k in
                 #                 range(self.population.label_clusters.__len__())}
                 # plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
@@ -212,8 +212,8 @@ class REGLoGP(Prediction):
                 if DEMO:
                     self.population.build_graph([self.population.popset[idx] for idx in self.population.matchset])
                     cluster_dict = {0: self.population.predicted_labels}
-                    plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
                     plot_image(sample[2], sample[1], vote, self.data.label_ref)
+                    plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
 
             vote_list.append(vote)
             self.population.clear_sets()
