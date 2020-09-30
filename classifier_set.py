@@ -62,7 +62,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         if popset:
             self.popset = popset
 
-    def make_matchset(self, state, target, it):
+    def make_matchset(self, state, target, it, prob):
         covering = True
         self.matchset_full = [ind for (ind, classifier) in enumerate(self.popset) if
                          match(classifier, state, self.dtypes)]
@@ -84,7 +84,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             numerosity_sum = sum([self.popset[idx].numerosity for idx in self.matchset_full])
             new_classifier = Classifier()
             new_classifier.classifier_cover(numerosity_sum + 1, it, state, target.difference(covered_labels),
-                                            self.attribute_info, self.dtypes, self.random)
+                                            self.attribute_info, self.dtypes, self.random, prob)
             self.insert_classifier_pop(new_classifier, True)
             self.matchset.append(self.popset.__len__() - 1)
             self.matchset_full.append(self.popset.__len__() - 1)
@@ -125,8 +125,8 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             pass
 
 # deletion methods
-    def deletion(self):
-        while self.micro_pop_size > MAX_CLASSIFIER:
+    def deletion(self, pop_size):
+        while self.micro_pop_size > pop_size:
             self.delete_from_sets()
 
     def delete_from_sets(self):
@@ -170,15 +170,15 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.correctset = correctset_copy
 
 # genetic algorithm methods
-    def apply_ga(self, iteration, state, data):
+    def apply_ga(self, iteration, state, data, prob):
         changed0 = False
 
         if self.correctset.__len__() > 1:
             parent1, parent2, offspring1, offspring2 = self.selection(iteration)
             if self.random.random() < P_XOVER and not ClassifierMethods.is_equal(self, offspring1, offspring2):
                 offspring1, offspring2, changed0 = self.xover(offspring1, offspring2)
-            offspring1.condition, offspring1.specified_atts, changed1 = self.mutate(offspring1, state)
-            offspring2.condition, offspring2.specified_atts, changed2 = self.mutate(offspring2, state)
+            offspring1.condition, offspring1.specified_atts, changed1 = self.mutate(offspring1, state, prob)
+            offspring2.condition, offspring2.specified_atts, changed2 = self.mutate(offspring2, state, prob)
         else:
             parent1 = self.popset[self.correctset[0]]
             parent2 = parent1
@@ -187,8 +187,8 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             offspring2 = Classifier()
             offspring2.classifier_copy(parent2, iteration)
 
-            offspring1.condition, offspring1.specified_atts, changed1 = self.mutate(offspring1, state)
-            offspring2.condition, offspring2.specified_atts, changed2 = self.mutate(offspring2, state)
+            offspring1.condition, offspring1.specified_atts, changed1 = self.mutate(offspring1, state, prob)
+            offspring2.condition, offspring2.specified_atts, changed2 = self.mutate(offspring2, state, prob)
 
         if changed0:
             offspring1.set_fitness(FITNESS_RED * (offspring1.fitness + offspring2.fitness)/2)
@@ -299,14 +299,14 @@ class ClassifierSets(ClassifierMethods, GraphPart):
 
         return [offspring1, offspring2, changed]
 
-    def mutate(self, child_classifier, state):
+    def mutate(self, child_classifier, state, prob):
         changed = False
         atts_child = child_classifier.specified_atts
         cond_child = child_classifier.condition
 
         def mutate_single(idx):
             if idx in atts_child:  # attribute specified in classifier condition
-                if self.random.random() < PROB_HASH:  # remove the specification
+                if self.random.random() < prob:  # remove the specification
                     ref_2_cond = atts_child.index(idx)
                     atts_child.remove(idx)
                     cond_child.pop(ref_2_cond)
@@ -333,7 +333,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
                 else:
                     pass
             else:  # attribute not specified in classifier condition
-                if self.random.random() < (1 - PROB_HASH):
+                if self.random.random() < (1 - prob):
                     atts_child.append(idx)
                     cond_child.append(self.classifier.build_match(state[idx], self.attribute_info[idx],
                                                                   self.dtypes[idx], self.random))

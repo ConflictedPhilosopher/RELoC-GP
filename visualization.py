@@ -14,7 +14,7 @@ from matplotlib import image
 from config import *
 
 
-def plot_records(records):
+def plot_records(records, pop_size, prob):
     records_plot = np.zeros([int(MAX_ITERATION / TRACK_FREQ), 3])
     for i in range(records.__len__()):
         record = records[i]
@@ -33,8 +33,9 @@ def plot_records(records):
     plt.xlabel('Iteration')
     plt.ylabel('F-score')
     plt.legend()
-    fig_name = str(MAX_CLASSIFIER) + '-' + str(PROB_HASH) + '.png'
-    plt.savefig(os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, fig_name), bbox_inches='tight')
+    fig_name = str(pop_size) + '-' + str(prob) + '.png'
+    plt.savefig(os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, 'params-'+str(pop_size)+'-'+str(prob),
+                             fig_name), bbox_inches='tight')
     plt.close()
 
 

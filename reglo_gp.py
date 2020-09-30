@@ -19,10 +19,13 @@ from visualization import plot_image, plot_graph
 
 
 class REGLoGP(Prediction):
-    def __init__(self, exp, data):
+    def __init__(self, exp, pop_size, prob, data, theta):
         Prediction.__init__(self)
         self.exp = exp
         self.data = data
+        self.N = pop_size
+        self.p = prob
+        self.theta = theta
         self.tracked_loss = 0
         self.no_match = 0
         self.timer = Timer()
@@ -31,7 +34,7 @@ class REGLoGP(Prediction):
 
         if REBOOT_MODEL:
             trained_model = RebootModel(self.exp, self.data.dtypes)
-            pop = trained_model.get_model()
+            pop = trained_model.get_model(self.N, self.p)
             self.population = ClassifierSets(data.attribute_info, data.dtypes, random, pop)
             self.population.micro_pop_size = sum([classifier.numerosity for classifier in pop])
             self.population.pop_average_eval()
@@ -40,7 +43,8 @@ class REGLoGP(Prediction):
 
         self.iteration = 1
         try:
-            track_file = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "tracking_" + str(self.exp) + ".csv")
+            track_file = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, 'params-'+str(self.N)+'-'+str(self.p),
+                                      "tracking_" + str(self.exp) + ".csv")
             self.training_track = open(track_file, 'w')
         except Exception as exc:
             print(exc)
@@ -78,7 +82,7 @@ class REGLoGP(Prediction):
                         else:
                             if THRESHOLD == 1:
                                 label_prediction, _ = Prediction.one_threshold(self, self.population.popset,
-                                                                               self.population.matchset)
+                                                                               self.population.matchset, self.theta)
                             elif THRESHOLD == 2:
                                 label_prediction, _ = Prediction.rank_cut(self, self.population.popset,
                                                                           self.population.matchset)
@@ -119,7 +123,7 @@ class REGLoGP(Prediction):
         [train_evaluation, _, train_coverage] = self.evaluation(False)
         self.timer.stop_evaluation()
 
-        reporting = Reporting(self.exp)
+        reporting = Reporting(self.exp, self.N, self.p)
         reporting.write_pop(self.population.popset, self.data.dtypes)
         reporting.write_model_stats(self.population, self.timer, train_evaluation, train_coverage,
                                     test_evaluation, test_coverage)
@@ -131,7 +135,7 @@ class REGLoGP(Prediction):
 
     def train_iteration(self, sample):
         self.timer.start_matching()
-        self.population.make_matchset(sample[0], sample[1], self.iteration)
+        self.population.make_matchset(sample[0], sample[1], self.iteration, self.p)
         self.timer.stop_matching()
 
         label_prediction = Prediction.max_prediction(self, self.population.popset,
@@ -160,11 +164,11 @@ class REGLoGP(Prediction):
             if self.population.correctset.__len__() > 0:
                 self.timer.start_selection()
                 [popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
-                self.population.apply_ga(self.iteration, sample[0], self.data.data_train_list)
+                self.population.apply_ga(self.iteration, sample[0], self.data.data_train_list, self.p)
                 self.timer.stop_selection()
 
         self.timer.start_deletion()
-        self.population.deletion()
+        self.population.deletion(self.N)
         self.timer.stop_deletion()
         self.population.clear_sets()
 
@@ -199,7 +203,7 @@ class REGLoGP(Prediction):
                 else:
                     if THRESHOLD == 1:
                         label_prediction, vote = Prediction.one_threshold(self, self.population.popset,
-                                                                          self.population.matchset)
+                                                                          self.population.matchset, self.theta)
                     elif THRESHOLD == 2:
                         label_prediction, vote = Prediction.rank_cut(self, self.population.popset,
                                                                      self.population.matchset)

@@ -17,16 +17,17 @@ from visualization import plot_records, plot_bar
 
 
 def handle_model(args):
-    exp, data = args
-    model = REGLoGP(exp, data)
+    exp, N, p, t, data = args
+    model = REGLoGP(exp, N, p, data, t)
     ml_perf, class_prec, track_to_plot = model.train_model()
     return [ml_perf, class_prec, track_to_plot]
 
 
-def run_parallel(olo, cv, cmplt):
+def run_parallel(olo, cv, cmplt, pop_size, prob, theta):
     random.seed(SEED_NUMBER)
     os.makedirs(REPORT_PATH, exist_ok=True)
     os.makedirs(os.path.join(REPORT_PATH, DATA_HEADER), exist_ok=True)
+    os.makedirs(os.path.join(REPORT_PATH, DATA_HEADER, 'params-' + str(pop_size) + '-' + str(prob)), exist_ok=True)
 
     data = Preprocessing()
     data.main(olo, cv, cmplt)
@@ -36,7 +37,7 @@ def run_parallel(olo, cv, cmplt):
         n_jobs = AVG_COUNT
 
     start = time.time()
-    arg_instances = [[idx, data] for idx in range(n_jobs)]
+    arg_instances = [[idx, pop_size, prob, theta, data] for idx in range(n_jobs)]
     results = Parallel(n_jobs=n_jobs, verbose=1, backend="multiprocessing")(map(delayed(handle_model), arg_instances))
     end = time.time()
     print('multi-threading time ', (end - start)/60)
@@ -46,12 +47,12 @@ def run_parallel(olo, cv, cmplt):
     track_to_plot = [result[2] for result in results]
 
     avg_perf = avg_performance(ml_performance)
-    print('Average ML performance:')
+    print('Average ML performance (params ' + str(pop_size)+'-'+str(prob)+'-'+str(theta)+'):')
     [print(metric + ' ' + str('%.5f' % val)) for metric, val in avg_perf.items()]
 
     avg_precision = avg_performance(class_precision)
     plot_bar(avg_precision, 'precision')
-    plot_records(track_to_plot)
+    plot_records(track_to_plot, pop_size, prob)
 
 
 def avg_performance(dict_list):
@@ -61,4 +62,7 @@ def avg_performance(dict_list):
 
 
 if __name__ == "__main__":
-    run_parallel(0, 0, 1)
+    for N in MAX_CLASSIFIER:
+        for p in PROB_HASH:
+            for t in THETA:
+                run_parallel(0, 0, 1, N, p, t)

@@ -16,14 +16,14 @@ GET_MLD_PROP = True
 
 REBOOT_MODEL = 0
 MAX_ITERATION = 10000
-MAX_CLASSIFIER = 6000
-PROB_HASH = 0.85
+MAX_CLASSIFIER = list(range(1000, 6000, 500))
+PROB_HASH = [item/float(100) for item in list(range(30, 100, 5))]
 TRACK_FREQ = 1000
 AVG_COUNT = 10
 
 PREDICTION_METHOD = 2  # 1: max prediction - 2: aggregated prediction
 THRESHOLD = 1  # 1: score-based one-threshold - 2: rank-based rank-cut
-THETA = 0.5
+THETA = [item/float(100) for item in list(range(50, 100, 5))]
 RANK_CUT = 1
 
 K = 2  # number of label clusters

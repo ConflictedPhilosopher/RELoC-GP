@@ -25,14 +25,14 @@ class Classifier:
         self.ga_time = 0
         self.deletion_vote = 0.0
 
-    def classifier_cover(self, set_size, it, state, target, attribute_info, dtypes, random_func):
+    def classifier_cover(self, set_size, it, state, target, attribute_info, dtypes, random_func, prob):
         self.init_time = it
         self.ave_matchset_size = set_size
         self.prediction = target
         og = True
         while og:
             for ref, x in enumerate(state):
-                if random_func.random() < (1 - PROB_HASH):
+                if random_func.random() < (1 - prob):
                     self.specified_atts.append(ref)
                     self.condition.append(self.build_match(x, attribute_info[ref], dtypes[ref], random_func))
                     og = False

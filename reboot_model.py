@@ -17,9 +17,10 @@ class RebootModel():
         self.exp = exp
         self.dtypes = dtypes
 
-    def get_model(self):
+    def get_model(self, pop_size, prob):
         try:
-            file_name = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "model_" + str(self.exp) + ".csv")
+            file_name = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, 'params-'+str(pop_size)+'-'+str(prob),
+                                     "model_" + str(self.exp) + ".csv")
             model = pd.read_csv(file_name)
         except FileNotFoundError as inst:
             print(type(inst))

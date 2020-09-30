@@ -11,12 +11,15 @@ from classifier_methods import ClassifierMethods
 
 
 class Reporting():
-    def __init__(self, exp):
+    def __init__(self, exp, pop_size, prob):
         self.exp = exp
+        self.N = pop_size
+        self.p = prob
 
     def write_model_stats(self, pop, timer, train_eval, train_coverage, test_eval, test_coverage):
         try:
-            file_name = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "stats_" + str(self.exp) + ".txt")
+            file_name = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, 'params-'+str(self.N)+'-'+str(self.p),
+                                     "stats_" + str(self.exp) + ".txt")
             stat_file = open(file_name, 'w')
         except Exception as inst:
             print(type(inst))
@@ -49,7 +52,8 @@ class Reporting():
 
     def write_pop(self, pop, dtypes):
         try:
-            file_name = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "model_" + str(self.exp) + ".csv")
+            file_name = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, 'params-'+str(self.N)+'-'+str(self.p),
+                                     "model_" + str(self.exp) + ".csv")
             model_file = open(file_name, 'w')
         except Exception as inst:
             print(type(inst))

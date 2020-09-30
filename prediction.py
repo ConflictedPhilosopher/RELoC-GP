@@ -81,9 +81,9 @@ class Prediction:
         except (ZeroDivisionError, ValueError):
             pass
 
-    def one_threshold(self, popset, matchset):
+    def one_threshold(self, popset, matchset, theta):
         self.aggregate_prediction(popset, matchset)
-        [self.prediction.add(label) for label in self.vote.keys() if self.vote[label] >= THETA]
+        [self.prediction.add(label) for label in self.vote.keys() if self.vote[label] >= theta]
         return [self.prediction, self.vote]
 
     def rank_cut(self, popset, matchset):
