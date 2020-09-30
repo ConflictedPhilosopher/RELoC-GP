@@ -38,10 +38,11 @@ class ClassifierMethods:
         return False
 
     def is_subsumer(self, classifier1):
-        acc = sum([acc / classifier1.match_count for acc in classifier1.label_based.values()]) \
-                    / float(classifier1.prediction.__len__())
-        if classifier1.match_count > THETA_SUB and acc > ACC_SUB:
-            return True
+        if classifier1.match_count > THETA_SUB:
+            acc = sum([acc / classifier1.match_count for acc in classifier1.label_based.values()]) \
+                  / float(classifier1.prediction.__len__())
+            if acc > ACC_SUB:
+                return True
         return False
 
     def is_more_general(self, classifier1, classifier2):
