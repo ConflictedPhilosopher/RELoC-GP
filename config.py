@@ -15,11 +15,11 @@ NO_LABELS = 50
 GET_MLD_PROP = True
 
 REBOOT_MODEL = 0
-MAX_ITERATION = 1000
-MAX_CLASSIFIER = 100
+MAX_ITERATION = 10000
+MAX_CLASSIFIER = 6000
 PROB_HASH = 0.85
 TRACK_FREQ = 1000
-AVG_COUNT = 1
+AVG_COUNT = 10
 
 PREDICTION_METHOD = 2  # 1: max prediction - 2: aggregated prediction
 THRESHOLD = 1  # 1: score-based one-threshold - 2: rank-based rank-cut
@@ -29,7 +29,7 @@ RANK_CUT = 1
 K = 2  # number of label clusters
 L_MIN = 2
 
-DEMO = True
+DEMO = False
 
 # ------------------------------------------------------------------------------
 INIT_FITNESS = 0.01
