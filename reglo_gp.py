@@ -107,6 +107,7 @@ class REGLoGP(Prediction):
                 else:
                     loss_old = self.tracked_loss / TRACK_FREQ
                 self.tracked_loss = 0
+                # self.population.pop_compaction()
 
             self.iteration += 1
 
@@ -147,17 +148,20 @@ class REGLoGP(Prediction):
             self.timer.stop_subsumption()
 
         if (self.iteration - self.population.get_time_average()) > THETA_GA:
-            self.timer.start_selection()
             popset = self.population.popset
             if self.population.matchset.__len__() > 1:
+                self.timer.start_label_partition()
                 self.population.apply_partitioning(self.iteration, sample[1])
+                self.timer.stop_label_partition()
                 # print('target ', sample[1])
                 # cluster_dict = {k: self.population.label_clusters[k] for k in
                 #                 range(self.population.label_clusters.__len__())}
                 # plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
-            [popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
-            self.population.apply_ga(self.iteration, sample[0], self.data.data_train_list)
-            self.timer.stop_selection()
+            if self.population.correctset.__len__() > 0:
+                self.timer.start_selection()
+                [popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
+                self.population.apply_ga(self.iteration, sample[0], self.data.data_train_list)
+                self.timer.stop_selection()
 
         self.timer.start_deletion()
         self.population.deletion()
