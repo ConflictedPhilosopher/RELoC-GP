@@ -5,7 +5,6 @@
 #
 # ------------------------------------------------------------------------------
 import os.path
-import random
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -75,9 +74,6 @@ def plot_graph(label_clusters, sim_matrix, label_ref):
             else:
                 graph.add_node(labels[c1])
                 graph.add_node(labels[c2])
-
-    fig1, ax1 = plt.subplots()
-    ax1.set_title('Label similarity graph')
     try:
         pos = nx.planar_layout(graph)
     except nx.NetworkXException:
@@ -99,9 +95,12 @@ def plot_graph(label_clusters, sim_matrix, label_ref):
 
 
 def plot_image(image_id, labels, vote, label_ref):
+    fig1, ax = plt.subplots(2)
+    ax[0].set_title('Test image')
+    ax[1].set_title('Label similarity')
     try:
         pixels = image.imread(os.path.join(DATA_DIR, DATA_HEADER, 'images_root', image_id + '.png'))
-        plt.imshow(pixels)
+        ax[0].imshow(pixels)
     except FileNotFoundError:
         pass
     print('Ground truth: ', [label_ref[label] for label in labels])
