@@ -64,30 +64,37 @@ class ClassifierSets(ClassifierMethods, GraphPart):
 
     def make_matchset(self, state, target, it):
         covering = True
-        self.matchset_full = [ind for (ind, classifier) in enumerate(self.popset) if
+        self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
                          match(classifier, state, self.dtypes)]
-        if self.matchset_full.__len__() > self.k:
-            sim = [similarity(self.popset[idx], state) for idx in self.matchset_full]
+        if self.matchset.__len__() > self.k:
+            sim = [similarity(self.popset[idx], state) for idx in self.matchset]
             sim_sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
             # d = [distance(self.popset[idx], state) for idx in self.matchset]
             # d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
-            knn_matchset = [self.matchset_full[idx] for idx in sim_sorted_index[:self.k]]
+            knn_matchset = [self.matchset[idx] for idx in sim_sorted_index[:self.k]]
             self.matchset = sorted(knn_matchset)
 
-        covered_labels = set()
-        covered_labels = covered_labels.union(*[self.popset[ind].prediction for ind in self.matchset])
-        if target.issubset(covered_labels):
-            covering = False
-            return
+        # testing
+        for ind in self.matchset:
+            if self.popset[ind].prediction == target:
+                covering = False
+                return
+
+        # covered_labels = set()
+        # covered_labels = covered_labels.union(*[self.popset[ind].prediction for ind in self.matchset])
+        # if target.issubset(covered_labels):
+        #     covering = False
+        #     return
 
         if covering:
-            numerosity_sum = sum([self.popset[idx].numerosity for idx in self.matchset_full])
+            numerosity_sum = sum([self.popset[idx].numerosity for idx in self.matchset])
             new_classifier = Classifier()
-            new_classifier.classifier_cover(numerosity_sum + 1, it, state, target.difference(covered_labels),
+            # new_classifier.classifier_cover(numerosity_sum + 1, it, state, target.difference(covered_labels),
+            #                                 self.attribute_info, self.dtypes, self.random)
+            new_classifier.classifier_cover(numerosity_sum + 1, it, state, target,
                                             self.attribute_info, self.dtypes, self.random)
             self.insert_classifier_pop(new_classifier, True)
             self.matchset.append(self.popset.__len__() - 1)
-            self.matchset_full.append(self.popset.__len__() - 1)
 
     def make_eval_matchset(self, state):
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
@@ -100,17 +107,14 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             self.matchset = knn_matchset
 
     def make_correctset(self, target):
-        self.correctset = [ind for ind in self.matchset if len(self.popset[ind].prediction.intersection(target)) > 0]
+        # self.correctset = [ind for ind in self.matchset if len(self.popset[ind].prediction.intersection(target)) > 0]
+        self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
 
     def apply_partitioning(self, it, target):
         self.build_graph([self.popset[idx] for idx in self.matchset])
-        new_classifiers = self.refine_prediction(it, target)
-        try:
-            count = sum([new_list.__len__() for new_list in new_classifiers])
-        except TypeError:
-            count = 0
-        if count > 0:
-            [[self.insert_classifier_pop(classifier, True) for classifier in new_list] for new_list in new_classifiers]
+        new_classifiers, pop_reduce = self.refine_prediction(it, target)
+        if new_classifiers.__len__() > 0:
+            [self.insert_classifier_pop(classifier, True) for classifier in new_classifiers]
             remove_idx = [idx for idx in self.matchset if self.popset[idx].numerosity == 0]
             i = 0
             for idx in remove_idx:
@@ -118,9 +122,9 @@ class ClassifierSets(ClassifierMethods, GraphPart):
                 self.remove_from_matchset(idx - i)
                 self.remove_from_correctset(idx - i)
                 i += 1
-            [self.correctset.append(self.popset.__len__() - 1 - cc) for cc in range(count)
+            [self.correctset.append(self.popset.__len__() - 1 - cc) for cc in range(new_classifiers.__len__())
              if self.popset[self.popset.__len__() - 1 - cc].prediction.issubset(target)]
-            self.micro_pop_size -= new_classifiers.__len__()
+            self.micro_pop_size -= pop_reduce
         else:
             pass
 
@@ -423,8 +427,8 @@ class ClassifierSets(ClassifierMethods, GraphPart):
 
 # update sets
     def update_sets(self, target):
-        m_size = sum([self.popset[ref].numerosity for ref in self.matchset_full])
-        [self.popset[ref].update_params(m_size, target) for ref in self.matchset_full]
+        m_size = sum([self.popset[ref].numerosity for ref in self.matchset])
+        [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
 
     def clear_sets(self):
         self.matchset = []
