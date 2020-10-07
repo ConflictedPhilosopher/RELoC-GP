@@ -51,6 +51,23 @@ def plot_bar(value_dict, title):
     plt.close()
 
 
+def plot_heatmap(sim_matrix, label_ref):
+    annotations = list(label_ref.values())
+    fig, ax = plt.subplots()
+    ax.imshow(sim_matrix, cmap='hot', interpolation='nearest')
+    ax.set_title('Pair-wise label similarity')
+    ax.set_xticks(np.arange(annotations.__len__()))
+    ax.set_yticks(np.arange(annotations.__len__()))
+    ax.set_xticklabels(annotations)
+    ax.set_yticklabels(annotations)
+
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+             rotation_mode="anchor")
+    fig.tight_layout()
+    plt.savefig(os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, 'heat-map.png'))
+    plt.close()
+
+
 def plot_graph(label_clusters, sim_matrix, label_ref):
     labels = set()
     for cl in label_clusters.values():
@@ -96,15 +113,16 @@ def plot_graph(label_clusters, sim_matrix, label_ref):
 
 def plot_image(image_id, labels, vote, label_ref):
     fig1, ax = plt.subplots(2)
-    ax[0].set_title('Test image')
+    ax[0].set_title('Test image' + image_id)
     ax[1].set_title('Label similarity')
     try:
-        pixels = image.imread(os.path.join(DATA_DIR, DATA_HEADER, 'images_root', image_id + '.png'))
+        pixels = image.imread(os.path.join(DATA_DIR, DATA_HEADER, 'images_dir', image_id + '.png'))
         ax[0].imshow(pixels)
     except FileNotFoundError:
         pass
     print('Ground truth: ', [label_ref[label] for label in labels])
     print('Ranked prediction: ')
     for k in sorted(vote, key=vote.get, reverse=True):
-        print(label_ref[k], round(vote[k], 4))
+        if vote[k] > 0:
+            print(label_ref[k], round(vote[k], 4))
     plt.show()
