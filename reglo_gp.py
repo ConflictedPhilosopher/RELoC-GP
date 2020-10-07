@@ -47,7 +47,7 @@ class REGLoGP(Prediction):
             print("can not open track_" + str(self.exp) + ".txt")
             raise
         else:
-            self.training_track.write("iteration, macroPop, microPop, aveLoss, "
+            self.training_track.write("iteration, macroPop, microPop, aveFitness, "
                                       "aveGenerality, trainFscore, testFscore, time(min)\n")
 
     def train_model(self):
@@ -102,17 +102,17 @@ class REGLoGP(Prediction):
 
                 self.track_to_plot.append([self.iteration, train_fscore, test_fscore])
 
-                if float(self.tracked_loss / TRACK_FREQ) - loss_old > 0.1:
+                if float(self.tracked_loss / TRACK_FREQ) - loss_old > 0.01:
                     stop_training = True
                 else:
                     loss_old = self.tracked_loss / TRACK_FREQ
                 self.tracked_loss = 0
-                # self.population.pop_compaction()
 
             self.iteration += 1
 
         self.training_track.close()
 
+        self.population.pop_compaction()
         self.timer.start_evaluation()
         self.population.pop_average_eval()
         [test_evaluation, test_class_precision, test_coverage] = self.evaluation()
@@ -209,11 +209,17 @@ class REGLoGP(Prediction):
                 performance.update_example_based(vote, label_prediction, sample[1])
                 performance.update_class_based(label_prediction, sample[1])
 
-                if DEMO:
-                    self.population.build_graph([self.population.popset[idx] for idx in self.population.matchset])
-                    cluster_dict = {0: self.population.predicted_labels}
-                    plot_image(sample[2], sample[1], vote, self.data.label_ref)
-                    plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
+                # if DEMO:
+                #     self.population.build_graph([self.population.popset[idx] for idx in self.population.matchset])
+                #     cluster_dict = {0: self.population.predicted_labels}
+                #     plot_image(sample[2], sample[1], vote, self.data.label_ref)
+                #     plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
+                #
+                #     for idx in self.population.matchset:
+                #         if self.population.popset[idx].match_count > 0:
+                #             print('Classifier acc:')
+                #             for k, v in self.population.popset[idx].label_based.items():
+                #                 print(self.data.label_ref[k], round(v / self.population.popset[idx].match_count, 3))
 
             vote_list.append(vote)
             self.population.clear_sets()

@@ -11,7 +11,7 @@ DATA_DIR = "D:\Datasets"
 DATA_HEADER = "mit-csail"
 REPORT_PATH = "report"
 NO_FEATURES = 256
-NO_LABELS = 50
+NO_LABELS = 51
 GET_MLD_PROP = True
 
 REBOOT_MODEL = 0
@@ -29,7 +29,7 @@ RANK_CUT = 1
 K = 2  # number of label clusters
 L_MIN = 2
 
-DEMO = False
+DEMO = 0
 
 # ------------------------------------------------------------------------------
 INIT_FITNESS = 0.01
