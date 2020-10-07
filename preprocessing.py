@@ -6,10 +6,14 @@
 # ------------------------------------------------------------------------------
 import os.path
 from math import sqrt
+
 import pandas as pd
+import numpy as np
+from scipy import sparse
+from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.model_selection import train_test_split
 
-from visualization import plot_bar
+from visualization import plot_bar, plot_heatmap
 from config import *
 
 
@@ -33,6 +37,7 @@ class Preprocessing:
         self.data_test_list = []
         self.data_train_folds = []
         self.data_valid_folds = []
+        self.sim_matrix = None
         self.default_split = 0.7
 
     def main(self, train_test, cv, complete):
@@ -122,15 +127,20 @@ class Preprocessing:
         count = sum([len(label) for label in data_complete['labelset']])
         self.card = count / data_complete.__len__()
         self.density = self.card / NO_LABELS
+        label_matrix = data_complete.iloc[:, NO_FEATURES:-1]
         counts = [data_complete[classs].sum() for classs in data_complete.columns[NO_FEATURES:-1]]
         self.class_count = dict(zip(list(data_complete.columns)[NO_FEATURES:-1], counts))
-        plot_bar(self.class_count, 'frequency')
         class_pi = [val / data_complete.__len__() for val in list(self.class_count.values())]
         imbalance_label = [max(class_pi) / val for val in class_pi]
         self.imbalance_mean = sum(imbalance_label) / NO_LABELS
         temp = [(val - self.imbalance_mean) ** 2 for val in imbalance_label]
         imbalance_label_sigma = sqrt(sum(temp) / (self.label_count - 1))
         self.cvir = imbalance_label_sigma / self.imbalance_mean
+
+        label_matrix_sparse = sparse.csr_matrix(np.array(label_matrix).transpose())
+        self.sim_matrix = cosine_similarity(label_matrix_sparse)
+        plot_bar(self.class_count, 'frequency')
+        plot_heatmap(self.sim_matrix, self.label_ref)
 
         label_list = []
         if self.data_train_list:
