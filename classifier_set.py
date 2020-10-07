@@ -53,12 +53,12 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.correctset = []
         self.micro_pop_size = 0
         self.ave_generality = 0.0
-        self.ave_loss = 0.0
+        self.ave_fitness = 0.0
         self.classifier = Classifier()
         self.attribute_info = attribute_info
         self.dtypes = dtypes
         self.random = rand_func
-        self.k = 5
+        self.k = 10
         if popset:
             self.popset = popset
 
@@ -74,23 +74,14 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             knn_matchset = [self.matchset[idx] for idx in sim_sorted_index[:self.k]]
             self.matchset = sorted(knn_matchset)
 
-        # testing
         for ind in self.matchset:
             if self.popset[ind].prediction == target:
                 covering = False
                 return
 
-        # covered_labels = set()
-        # covered_labels = covered_labels.union(*[self.popset[ind].prediction for ind in self.matchset])
-        # if target.issubset(covered_labels):
-        #     covering = False
-        #     return
-
         if covering:
             numerosity_sum = sum([self.popset[idx].numerosity for idx in self.matchset])
             new_classifier = Classifier()
-            # new_classifier.classifier_cover(numerosity_sum + 1, it, state, target.difference(covered_labels),
-            #                                 self.attribute_info, self.dtypes, self.random)
             new_classifier.classifier_cover(numerosity_sum + 1, it, state, target,
                                             self.attribute_info, self.dtypes, self.random)
             self.insert_classifier_pop(new_classifier, True)
@@ -107,7 +98,6 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             self.matchset = knn_matchset
 
     def make_correctset(self, target):
-        # self.correctset = [ind for ind in self.matchset if len(self.popset[ind].prediction.intersection(target)) > 0]
         self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
 
     def apply_partitioning(self, it, target):
@@ -438,13 +428,13 @@ class ClassifierSets(ClassifierMethods, GraphPart):
     def pop_average_eval(self):
         generality_sum = sum([(NO_FEATURES - classifier.specified_atts.__len__())/float(NO_FEATURES)
                               for classifier in self.popset])
-        loss_sum = sum([classifier.loss for classifier in self.popset])
+        fitness_sum = sum([classifier.fitness for classifier in self.popset])
         try:
             self.ave_generality = generality_sum / float(self.popset.__len__())
-            self.ave_loss = loss_sum / float(self.popset.__len__())
+            self.ave_fitness = fitness_sum / float(self.popset.__len__())
         except ZeroDivisionError:
             self.ave_generality = None
-            self.ave_loss = None
+            self.ave_fitness = None
 
     def pop_compaction(self):
         self.popset = [classifier for classifier in self.popset if classifier.match_count > 0]
@@ -457,5 +447,5 @@ class ClassifierSets(ClassifierMethods, GraphPart):
 # other methods
     def get_pop_tracking(self):
         tracking = str(self.popset.__len__()) + ", " + str(self.micro_pop_size) \
-                   + ", " + str("%.4f" % self.ave_loss) + ", " + str("%.4f" % self.ave_generality)
+                   + ", " + str("%.4f" % self.ave_fitness) + ", " + str("%.4f" % self.ave_generality)
         return tracking
