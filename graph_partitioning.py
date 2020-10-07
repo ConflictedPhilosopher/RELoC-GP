@@ -11,7 +11,6 @@ from scipy.sparse.csgraph import connected_components
 
 from hfps_clustering import density_based
 from classifier import Classifier
-from visualization import plot_graph
 from config import *
 
 
