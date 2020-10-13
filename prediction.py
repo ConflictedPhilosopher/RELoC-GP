@@ -31,7 +31,7 @@ class Prediction:
         if max_vote == 0:
             [self.prediction.add(label) for label in list(self.vote.keys())
                 [randint_func(0, self.vote.keys().__len__() - 1)]]
-            return
+            return self.prediction
         candidate_lp = [lp for lp, v in self.vote.items() if v == max_vote]
         if candidate_lp.__len__() > 1:
             max_numerosity = max([tiebreak_numerosity[lp] for lp in candidate_lp])
