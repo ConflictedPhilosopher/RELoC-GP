@@ -15,7 +15,7 @@ from config import *
 
 
 def plot_records(records):
-    records_plot = np.zeros([int(MAX_ITERATION / TRACK_FREQ), 3])
+    records_plot = np.zeros([int(MAX_ITERATION / TRACK_FREQ), 6])
     for i in range(records.__len__()):
         record = records[i]
         for j in range(int(MAX_ITERATION / TRACK_FREQ)):
@@ -28,11 +28,17 @@ def plot_records(records):
     iterations = range(TRACK_FREQ, MAX_ITERATION + TRACK_FREQ, TRACK_FREQ)
     train_f = records_plot[:, 1]
     test_f = records_plot[:, 2]
+    avg_fitness = records_plot[:, 3]
+    micro_pop = records_plot[:, 4]
+    macro_pop = records_plot[:, 5]
     plt.plot(iterations, train_f, label='train f-score')
     plt.plot(iterations, test_f, label='test f-score')
+    plt.plot(iterations, avg_fitness, label='avg-fitness')
+    plt.plot(iterations, micro_pop, label='micro-pop(%)')
+    plt.plot(iterations, macro_pop, label='macro-pop(%)')
     plt.xlabel('Iteration')
-    plt.ylabel('F-score')
-    plt.legend()
+    plt.ylabel('Value')
+    plt.legend(loc=2, prop={'size': 8})
     fig_name = str(MAX_CLASSIFIER) + '-' + str(PROB_HASH) + '.png'
     plt.savefig(os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, fig_name), bbox_inches='tight')
     plt.close()
