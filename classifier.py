@@ -18,6 +18,7 @@ class Classifier:
         self.numerosity = 1
         self.match_count = 0
         self.loss = 0.0
+        self.fscore = 0.0
         self.label_based = {}
         self.fitness = INIT_FITNESS
         self.ave_matchset_size = 0
@@ -109,13 +110,15 @@ class Classifier:
         for l in self.prediction.intersection(target):
             self.label_based[l] += 1
 
+        # update f-score(target)
+        self.fscore += (2 * self.prediction.intersection(target).__len__() /
+                        (self.prediction.__len__() + target.__len__()))
+
         # update_fitness()
-        # label_accuracies = sum([acc / self.match_count for acc in self.label_based.values()]) \
-        #                    / float(self.prediction.__len__())
-        # self.fitness = max((label_accuracies ** NU), INIT_FITNESS)
         # self.fitness = max((1 - self.loss)**NU, INIT_FITNESS)
-        self.fitness = max((2 * self.prediction.intersection(target).__len__()
-                            / (self.prediction.__len__() + target.__len__())) ** NU, INIT_FITNESS)
+        label_accuracies = sum([acc / self.match_count for acc in self.label_based.values()]) /\
+            float(self.prediction.__len__())
+        self.fitness = max(((label_accuracies + self.fscore/self.match_count)/2)**NU, INIT_FITNESS)
 
     def set_fitness(self, fitness):
         self.fitness = fitness
