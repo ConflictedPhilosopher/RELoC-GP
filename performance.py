@@ -141,9 +141,9 @@ class Performance:
             / (self.micro_precision + self.micro_recall + 1e-3)
 
     def macro_average(self):
-        self.macro_precision = sum([class_dict['TP'] / (class_dict['TP'] + class_dict['FP'] + 1) for
+        self.macro_precision = sum([class_dict['TP'] / (class_dict['TP'] + class_dict['FP'] + 1e-3) for
                                     class_dict in self.class_based_measure]) / NO_LABELS
-        self.macro_recall = sum([class_dict['TP'] / (class_dict['TP'] + class_dict['FN'] + 1) for
+        self.macro_recall = sum([class_dict['TP'] / (class_dict['TP'] + class_dict['FN'] + 1e-3) for
                                 class_dict in self.class_based_measure]) / NO_LABELS
         self.macro_fscore = 2 * (self.macro_precision * self.macro_recall) \
             / (self.macro_precision + self.macro_recall + 1e-3)
