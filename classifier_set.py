@@ -33,8 +33,7 @@ def match(classifier, state, dtypes):
 def similarity(classifier, state):
     center = [(att[1] + att[0]) / 2 for att in classifier.condition]
     x = [state[idx] for idx in classifier.specified_atts]
-    sim = cosine_similarity([center, x])[0][1]
-    return sim
+    return cosine_similarity([center, x])[0][1]
 
 
 def distance(classifier, state):
@@ -92,9 +91,11 @@ class ClassifierSets(ClassifierMethods, GraphPart):
                          match(classifier, state, self.dtypes)]
 
         if self.matchset.__len__() > self.k:
-            d = [distance(self.popset[idx], state) for idx in self.matchset]
-            d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
-            knn_matchset = [self.matchset[idx] for idx in d_sort_index[:self.k]]
+            sim = [similarity(self.popset[idx], state) for idx in self.matchset]
+            sim_sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
+            # d = [distance(self.popset[idx], state) for idx in self.matchset]
+            # d_sort_index = sorted(range(d.__len__()), key=lambda x: d[x])
+            knn_matchset = [self.matchset[idx] for idx in sim_sorted_index[:self.k]]
             self.matchset = knn_matchset
 
     def make_correctset(self, target):
