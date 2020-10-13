@@ -39,7 +39,7 @@ def run_parallel(olo, cv, cmplt):
     arg_instances = [[idx, data] for idx in range(n_jobs)]
     results = Parallel(n_jobs=n_jobs, verbose=1, backend="multiprocessing")(map(delayed(handle_model), arg_instances))
     end = time.time()
-    print('multi-threading time ', (end - start)/60)
+    print('multi-threading time = {:.3f}'.format((end - start)/60))
 
     ml_performance = [result[0] for result in results]
     class_precision = [result[1] for result in results]
