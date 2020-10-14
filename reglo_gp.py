@@ -100,9 +100,11 @@ class REGLoGP(Prediction):
                                           + str("%.4f" % self.timer.get_global_timer()) + "\n")
                 self.timer.stop_evaluation()
 
-                self.track_to_plot.append([self.iteration, train_fscore, test_fscore])
+                self.track_to_plot.append([self.iteration, train_fscore, test_fscore, self.population.ave_fitness,
+                                           float(self.population.micro_pop_size/MAX_CLASSIFIER),
+                                           float(self.population.popset.__len__()/MAX_CLASSIFIER)])
 
-                if float(self.tracked_loss / TRACK_FREQ) - loss_old > 0.01:
+                if float(self.tracked_loss / TRACK_FREQ) - loss_old > 0.1:
                     stop_training = True
                 else:
                     loss_old = self.tracked_loss / TRACK_FREQ
@@ -134,8 +136,10 @@ class REGLoGP(Prediction):
         self.population.make_matchset(sample[0], sample[1], self.iteration)
         self.timer.stop_matching()
 
-        label_prediction = Prediction.max_prediction(self, self.population.popset,
-                                                     self.population.matchset, random.randint)
+        label_prediction, _ = Prediction.one_threshold(self, self.population.popset,
+                                                       self.population.matchset)
+        # label_prediction = Prediction.max_prediction(self, self.population.popset,
+        #                                              self.population.matchset, random.randint)
         self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__()
                               / NO_LABELS)
 
@@ -151,7 +155,7 @@ class REGLoGP(Prediction):
             popset = self.population.popset
             if self.population.matchset.__len__() > 1:
                 self.timer.start_label_partition()
-                self.population.apply_partitioning(self.iteration, sample[1])
+                # self.population.apply_partitioning(self.iteration, sample[1])
                 self.timer.stop_label_partition()
                 # print('target ', [self.data.label_ref[label] for label in sample[1]])
                 # cluster_dict = {k: self.population.label_clusters[k] for k in
@@ -171,6 +175,7 @@ class REGLoGP(Prediction):
     def evaluation(self, test=True):
         performance = Performance()
         vote_list = []
+        self.no_match = 0
 
         if test:
             if self.data.data_valid_folds:
@@ -209,17 +214,18 @@ class REGLoGP(Prediction):
                 performance.update_example_based(vote, label_prediction, sample[1])
                 performance.update_class_based(label_prediction, sample[1])
 
-                # if DEMO:
-                #     self.population.build_graph([self.population.popset[idx] for idx in self.population.matchset])
-                #     cluster_dict = {0: self.population.predicted_labels}
-                #     plot_image(sample[2], sample[1], vote, self.data.label_ref)
-                #     plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
-                #
-                #     for idx in self.population.matchset:
-                #         if self.population.popset[idx].match_count > 0:
-                #             print('Classifier acc:')
-                #             for k, v in self.population.popset[idx].label_based.items():
-                #                 print(self.data.label_ref[k], round(v / self.population.popset[idx].match_count, 3))
+                if DEMO:
+                    self.population.build_graph([self.population.popset[idx] for idx in self.population.matchset])
+                    cluster_dict = {0: self.population.predicted_labels}
+                    plot_image(sample[2], sample[1], vote, self.data.label_ref)
+                    plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
+
+                    print('target', [self.data.label_ref[label] for label in sample[1]])
+                    for idx in self.population.matchset:
+                        if self.population.popset[idx].match_count > 0:
+                            print('Classifier acc:')
+                            for k, v in self.population.popset[idx].label_based.items():
+                                print(self.data.label_ref[k], round(v / self.population.popset[idx].match_count, 3))
 
             vote_list.append(vote)
             self.population.clear_sets()
