@@ -60,10 +60,10 @@ class Prediction:
             else:
                 label_acc = {k: cl.fitness for k in cl.prediction}
             if self.vote[label]:
-                self.vote[label] += label_acc[label] * cl.numerosity
+                self.vote[label] += label_acc[label]  # * cl.numerosity
                 numerosity[label] += cl.numerosity
             else:
-                self.vote[label] = label_acc[label] * cl.numerosity
+                self.vote[label] = label_acc[label]   # * cl.numerosity
                 numerosity[label] = cl.numerosity
 
         def update_value(label, ref):
@@ -76,8 +76,9 @@ class Prediction:
 
         [update_value2(label, ref) for ref in matchset for label in popset[ref].prediction]
         try:
-            # max_vote = max(self.vote.values())
-            self.vote = {k: v / numerosity[k] for k, v in self.vote.items()}
+            max_vote = max(self.vote.values())
+            # self.vote = {k: v / numerosity[k] for k, v in self.vote.items()}
+            self.vote = {k: v / max_vote for k, v in self.vote.items()}
         except (ZeroDivisionError, ValueError):
             pass
 
