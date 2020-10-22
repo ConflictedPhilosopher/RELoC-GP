@@ -44,7 +44,7 @@ def distance(classifier, state):
 
 
 class ClassifierSets(ClassifierMethods, GraphPart):
-    def __init__(self, attribute_info, dtypes, rand_func, popset=None):
+    def __init__(self, attribute_info, dtypes, rand_func, sim_mode='global', cosine_matrix=None, popset=None):
         ClassifierMethods.__init__(self, dtypes)
         GraphPart.__init__(self)
         self.popset = []
@@ -57,6 +57,8 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.attribute_info = attribute_info
         self.dtypes = dtypes
         self.random = rand_func
+        self.cosine_matrix = cosine_matrix
+        self.sim_mode = sim_mode
         self.k = 10
         if popset:
             self.popset = popset
@@ -73,6 +75,10 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             knn_matchset = [self.matchset[idx] for idx in sim_sorted_index[:self.k]]
             self.matchset = sorted(knn_matchset)
 
+        if self.matchset.__len__() > 0:
+            lbls = set.union(*[self.popset[idx].prediction for idx in self.matchset])
+            if target.issubset(lbls):
+                covering = False
         for ind in self.matchset:
             if self.popset[ind].prediction == target:
                 covering = False
@@ -100,22 +106,25 @@ class ClassifierSets(ClassifierMethods, GraphPart):
 
     def make_correctset(self, target):
         self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
+        # self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction.issubset(target)]
 
-    def apply_partitioning(self, it, target):
-        self.build_graph([self.popset[idx] for idx in self.matchset])
-        new_classifiers, pop_reduce = self.refine_prediction(it, target)
-        if new_classifiers.__len__() > 0:
-            [self.insert_classifier_pop(classifier, True) for classifier in new_classifiers]
-            remove_idx = [idx for idx in self.matchset if self.popset[idx].numerosity == 0]
-            i = 0
-            for idx in remove_idx:
-                self.remove_from_pop(idx - i)
-                self.remove_from_matchset(idx - i)
-                self.remove_from_correctset(idx - i)
-                i += 1
-            [self.correctset.append(self.popset.__len__() - 1 - cc) for cc in range(new_classifiers.__len__())
-             if self.popset[self.popset.__len__() - 1 - cc].prediction.issubset(target)]
-            self.micro_pop_size -= pop_reduce
+    def apply_partitioning(self, it, target, vote):
+        if self.sim_mode == 'global':
+            graph_valid = self.build_graph([self.popset[idx] for idx in self.matchset], self.cosine_matrix)
+        else:
+            graph_valid = self.build_graph([self.popset[idx] for idx in self.matchset])
+        if graph_valid:
+            new_classifiers, pop_reduce = self.refine_prediction(it, target, vote)
+            if new_classifiers.__len__() > 0:
+                [self.insert_classifier_pop(classifier, True) for classifier in new_classifiers]
+                self.matchset += [self.popset.__len__()-1-i for i in range(new_classifiers.__len__())]
+                remove_idx = [idx for idx in self.matchset if self.popset[idx].numerosity == 0]
+                i = 0
+                for idx in remove_idx:
+                    self.remove_from_pop(idx - i)
+                    self.remove_from_matchset(idx - i)
+                    i += 1
+                self.micro_pop_size -= pop_reduce
         else:
             pass
 
@@ -192,11 +201,10 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             offspring1.set_fitness(FITNESS_RED * offspring1.fitness)
             offspring2.set_fitness(FITNESS_RED * offspring2.fitness)
 
-        if changed0 or changed1 or changed2:
-            if self.coverage(offspring1, data):
-                self.insert_discovered_classifier(offspring1, parent1, parent2)
-            if self.coverage(offspring2, data):
-                self.insert_discovered_classifier(offspring2, parent1, parent2)
+        if self.coverage(offspring1, data):
+            self.insert_discovered_classifier(offspring1, parent1, parent2)
+        if self.coverage(offspring2, data):
+            self.insert_discovered_classifier(offspring2, parent1, parent2)
 
     def selection(self, iteration):
         fitness = [self.popset[i].fitness for i in self.correctset]
@@ -206,9 +214,9 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             parent2 = self.popset[next(roulette)]
         elif SELECTION == 't':
             candidates = [self.popset[idx] for idx in self.correctset]
-            tournament = self.tournament(candidates)
-            parent1 = next(tournament)
-            parent2 = next(tournament)
+            parent1 = self.tournament(candidates)
+            candidates.remove(parent1)
+            parent2 = self.tournament(candidates)
         else:
             print("Error: GA selection method not identified.")
             return
@@ -239,7 +247,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
     def tournament(self, candidates, tsize=5):
         for i in range(candidates.__len__()):
             candidates = self.random.sample(candidates, min(candidates.__len__(), tsize))
-            yield max(candidates, key=lambda x: x.fitness)
+            return max(candidates, key=lambda x: x.fitness)
 
     def xover(self, offspring1, offspring2):
         changed = False
@@ -298,6 +306,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         changed = False
         atts_child = child_classifier.specified_atts
         cond_child = child_classifier.condition
+        # label_based_child = child_classifier.label_based
 
         def mutate_single(idx):
             if idx in atts_child:  # attribute specified in classifier condition
@@ -336,6 +345,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
                 return False
         changed = [mutate_single(att_idx) for att_idx in range(self.attribute_info.__len__())
                    if self.random.random() < P_MUT]
+        # labels = {k: v for k, v in label_based_child.items() if self.random.random() > P_MUT}
         return [cond_child, atts_child, changed]
 
     def insert_classifier_pop(self, classifier, search_matchset=False):
