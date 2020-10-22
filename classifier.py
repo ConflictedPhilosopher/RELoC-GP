@@ -103,8 +103,9 @@ class Classifier:
             self.ave_matchset_size += BETA * (m_size - self.ave_matchset_size)
 
         # update_loss(target)
-        self.loss += (self.prediction.symmetric_difference(target).__len__() / (float(NO_LABELS)))
-        self.loss /= float(self.match_count)
+        if not self.prediction.issubset(target):
+            self.loss += (self.prediction.symmetric_difference(target).__len__() /
+                          (float(self.prediction.__len__() + target.__len__())))
 
         # update label_based(target)
         for l in self.prediction.intersection(target):
@@ -115,10 +116,13 @@ class Classifier:
                         (self.prediction.__len__() + target.__len__()))
 
         # update_fitness()
-        # self.fitness = max((1 - self.loss)**NU, INIT_FITNESS)
-        label_accuracies = sum([acc / self.match_count for acc in self.label_based.values()]) /\
-            float(self.prediction.__len__())
-        self.fitness = max(((label_accuracies + self.fscore/self.match_count)/2)**NU, INIT_FITNESS)
+        self.fitness = max((1 - self.loss/self.match_count)**NU, INIT_FITNESS)
+        # weighted_accuracy_sum = sum([acc/(self.match_count*class_ratio[label]) for
+        #                              label, acc in self.label_based.items()]) / \
+        #                             sum([1/class_ratio[label] for label in self.prediction])
+        # accuracy_sum = sum([acc / self.match_count for acc in self.label_based.values()]) \
+        #                / float(self.prediction.__len__())
+        # self.fitness = max(((accuracy_sum + self.fscore/self.match_count) / 2) ** NU, INIT_FITNESS)
 
     def set_fitness(self, fitness):
         self.fitness = fitness
