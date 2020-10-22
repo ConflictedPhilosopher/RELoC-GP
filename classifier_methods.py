@@ -79,8 +79,9 @@ class ClassifierMethods:
         classifier_string += (prediction_string + ",")
         label_precision = ";".join([str(label) + ':' + str(pr) for label, pr in classifier.label_based.items()])
         classifier_string += (label_precision + ",")
+        loss = float(classifier.loss/classifier.match_count)
         parameter_string = str("%.4f" % classifier.fitness) + "," + \
-            str("%.4f" % classifier.loss) + "," + \
+            str("%.4f" % loss) + "," + \
             str("%d" % classifier.numerosity) + "," + \
             str("%d" % classifier.match_count) + "," + \
             str("%.4f" % classifier.ave_matchset_size) + "," + \
