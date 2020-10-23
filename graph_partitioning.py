@@ -39,7 +39,7 @@ def calculate_similarity(label_matrix, measure=0):
                 similarity[i, j] = np.dot(first_label, second_label) / np.linalg.norm(second_label, 1)
 
 
-def breakdown_labelset(classifier, it, target, label_clusters):
+def breakdown_labelset(classifier, it, label_clusters):
     prediction = set(classifier.label_based.keys())
     new_classifiers = []
     label_subsets = [prediction.intersection(cluster) for cluster in label_clusters if
@@ -89,9 +89,9 @@ class GraphPart:
                 self.label_similarity = calculate_similarity(self.label_matrix)
             return True
         else:
-            return
+            return False
 
-    def refine_prediction(self, it, target, vote):
+    def refine_prediction(self, it, vote=None):
         self.label_clusters = []
         try:
             self.label_similarity = np.where(self.label_similarity > 0.1, self.label_similarity, 0)
@@ -103,9 +103,9 @@ class GraphPart:
                 self.label_clusters.append(set([self.predicted_labels[node] for node in
                                                 range(self.predicted_labels.__len__()) if label_connected[node] == c]))
         else:
-            pass
-            # _, self.label_clusters = density_based(K, self.label_matrix, 1 - self.label_similarity,
-            #                                        self.predicted_labels)
+            # return [], 0
+            _, self.label_clusters = density_based(K, self.label_matrix, 1 - self.label_similarity,
+                                                   self.predicted_labels)
 
             vertex_weights = np.zeros((self.predicted_labels.__len__(), self.predicted_labels.__len__()))
             i = 0
@@ -124,7 +124,7 @@ class GraphPart:
         for classifier in self.classifiers:
             if classifier.prediction.__len__() > L_MIN:
                 try:
-                    [new_classifiers.append(cl) for cl in breakdown_labelset(classifier, it, target, self.label_clusters)]
+                    [new_classifiers.append(cl) for cl in breakdown_labelset(classifier, it, self.label_clusters)]
                     micro_pop_reduce += 1
                 except TypeError:
                     pass
