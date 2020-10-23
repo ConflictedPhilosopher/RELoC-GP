@@ -108,13 +108,13 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
         # self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction.issubset(target)]
 
-    def apply_partitioning(self, it, target, vote):
+    def apply_partitioning(self, it, vote=None):
         if self.sim_mode == 'global':
             graph_valid = self.build_graph([self.popset[idx] for idx in self.matchset], self.cosine_matrix)
         else:
             graph_valid = self.build_graph([self.popset[idx] for idx in self.matchset])
         if graph_valid:
-            new_classifiers, pop_reduce = self.refine_prediction(it, target, vote)
+            new_classifiers, pop_reduce = self.refine_prediction(it, vote)
             if new_classifiers.__len__() > 0:
                 [self.insert_classifier_pop(classifier, True) for classifier in new_classifiers]
                 self.matchset += [self.popset.__len__()-1-i for i in range(new_classifiers.__len__())]
