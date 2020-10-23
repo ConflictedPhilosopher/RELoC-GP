@@ -16,6 +16,7 @@ from performance import Performance
 from reporting import Reporting
 from reboot_model import RebootModel
 from visualization import plot_image, plot_graph
+from analyze_model import analyze
 
 
 class REGLoGP(Prediction):
@@ -32,11 +33,13 @@ class REGLoGP(Prediction):
         if REBOOT_MODEL:
             trained_model = RebootModel(self.exp, self.data.dtypes)
             pop = trained_model.get_model()
-            self.population = ClassifierSets(data.attribute_info, data.dtypes, random, pop)
+            self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
+                                             cosine_matrix=self.data.sim_matrix, popset=pop)
             self.population.micro_pop_size = sum([classifier.numerosity for classifier in pop])
             self.population.pop_average_eval()
         else:
-            self.population = ClassifierSets(data.attribute_info, data.dtypes, random)
+            self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
+                                             cosine_matrix=self.data.sim_matrix)
 
         self.iteration = 1
         try:
@@ -114,7 +117,6 @@ class REGLoGP(Prediction):
 
         self.training_track.close()
 
-        self.population.pop_compaction()
         self.timer.start_evaluation()
         self.population.pop_average_eval()
         [test_evaluation, test_class_precision, test_coverage] = self.evaluation()
@@ -142,25 +144,24 @@ class REGLoGP(Prediction):
         #                                              self.population.matchset, random.randint)
         self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__()
                               / NO_LABELS)
-
-        self.population.make_correctset(sample[1])
+        if self.population.matchset:
+            self.timer.start_label_partition()
+            # self.population.apply_partitioning(self.iteration, sample[1], votes)
+            self.timer.stop_label_partition()
+            # print('target ', [self.data.label_ref[label] for label in sample[1]])
+            # cluster_dict = {k: self.population.label_clusters[k] for k in
+            #                 range(self.population.label_clusters.__len__())}
+            # plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
         self.population.update_sets(sample[1])
 
+        self.population.make_correctset(sample[1])
         if DO_SUBSUMPTION:
             self.timer.start_subsumption()
             self.population.subsume_correctset()
             self.timer.stop_subsumption()
 
-        if (self.iteration - self.population.get_time_average()) > THETA_GA:
+        if self.population.correctset and (self.iteration - self.population.get_time_average()) > THETA_GA:
             popset = self.population.popset
-            if self.population.matchset.__len__() > 1:
-                self.timer.start_label_partition()
-                # self.population.apply_partitioning(self.iteration, sample[1])
-                self.timer.stop_label_partition()
-                # print('target ', [self.data.label_ref[label] for label in sample[1]])
-                # cluster_dict = {k: self.population.label_clusters[k] for k in
-                #                 range(self.population.label_clusters.__len__())}
-                # plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
             if self.population.correctset.__len__() > 0:
                 self.timer.start_selection()
                 [popset[idx].update_ga_time(self.iteration) for idx in self.population.correctset]
