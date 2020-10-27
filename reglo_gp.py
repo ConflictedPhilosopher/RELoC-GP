@@ -34,11 +34,13 @@ class REGLoGP(Prediction):
             trained_model = RebootModel(self.exp, self.data.dtypes)
             pop = trained_model.get_model()
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
+                                             sim_mode='global', sim_delta=0.1, clustering_method=None,
                                              cosine_matrix=self.data.sim_matrix, popset=pop)
             self.population.micro_pop_size = sum([classifier.numerosity for classifier in pop])
             self.population.pop_average_eval()
         else:
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
+                                             sim_mode='global', sim_delta=0.3, clustering_method=None,
                                              cosine_matrix=self.data.sim_matrix)
 
         self.iteration = 1
@@ -135,23 +137,10 @@ class REGLoGP(Prediction):
 
     def train_iteration(self, sample):
         self.timer.start_matching()
-        self.population.make_matchset(sample[0], sample[1], self.iteration)
+        label_prediction = self.population.make_matchset(sample[0], sample[1], self.iteration)
         self.timer.stop_matching()
-
-        label_prediction, _ = Prediction.one_threshold(self, self.population.popset,
-                                                       self.population.matchset)
-        # label_prediction = Prediction.max_prediction(self, self.population.popset,
-        #                                              self.population.matchset, random.randint)
         self.tracked_loss += (label_prediction.symmetric_difference(sample[1]).__len__()
                               / NO_LABELS)
-        if self.population.matchset:
-            self.timer.start_label_partition()
-            # self.population.apply_partitioning(self.iteration, sample[1], votes)
-            self.timer.stop_label_partition()
-            # print('target ', [self.data.label_ref[label] for label in sample[1]])
-            # cluster_dict = {k: self.population.label_clusters[k] for k in
-            #                 range(self.population.label_clusters.__len__())}
-            # plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
         self.population.update_sets(sample[1])
 
         self.population.make_correctset(sample[1])
