@@ -9,6 +9,17 @@ from copy import deepcopy
 from config import *
 
 
+def build_match(x, att_info, dtype, random_func):
+    if dtype:
+        att_range = att_info[1] - att_info[0]
+        radius_l = random_func.randint(25, 75) * 0.01 * (att_range / 2.0)
+        radius_r = random_func.randint(25, 75) * 0.01 * (att_range / 2.0)
+        return [max(att_info[0], (x - radius_l)), min(att_info[1], x + radius_r)]
+    elif not dtype:
+        return x
+    else:
+        print("attribute type unidentified!")
+
 class Classifier:
     def __init__(self):
         self.specified_atts = []
@@ -35,20 +46,9 @@ class Classifier:
             for ref, x in enumerate(state):
                 if random_func.random() < (1 - PROB_HASH):
                     self.specified_atts.append(ref)
-                    self.condition.append(self.build_match(x, attribute_info[ref], dtypes[ref], random_func))
+                    self.condition.append(build_match(x, attribute_info[ref], dtypes[ref], random_func))
                     og = False
         self.label_based = {k: 0 for k in self.prediction}
-
-    def build_match(self, x, att_info, dtype, random_func):
-        if dtype:
-            att_range = att_info[1] - att_info[0]
-            radius_l = random_func.randint(25, 75) * 0.01 * (att_range / 2.0)
-            radius_r = random_func.randint(25, 75) * 0.01 * (att_range / 2.0)
-            return [max(att_info[0], (x - radius_l)), min(att_info[1], x + radius_r)]
-        elif not dtype:
-            return x
-        else:
-            print("attribute type unidentified!")
 
     def classifier_copy(self, classifier_old, it):
         self.specified_atts = deepcopy(classifier_old.specified_atts)
