@@ -61,67 +61,72 @@ def breakdown_labelset(classifier, it, label_clusters):
 
 
 class GraphPart:
-    def __init__(self):
-        self.classifiers = []
+    def __init__(self, sim_delta):
         self.label_clusters = []
         self.label_similarity = None
         self.predicted_labels = []
         self.label_matrix = []
+        self.sim_delta = sim_delta
 
-    def build_graph(self, matching_classifiers, cosine_matrix=None):
-        self.label_clusters = []
+    def build_sim_graph(self, matching_classifiers, cosine_matrix=None):
         self.label_matrix = []
-        self.classifiers = matching_classifiers
-        if any([classifier.prediction.__len__() > 1 for classifier in self.classifiers]):
-            self.predicted_labels = sorted(list(set().union(*[classifier.prediction for classifier in self.classifiers])))
+        if any([classifier.prediction.__len__() > 1 for classifier in matching_classifiers]):
+            self.predicted_labels = sorted(list(set().union(*[classifier.prediction for classifier
+                                                              in matching_classifiers])))
 
             def label_vector(classifier):
                 return [max(classifier.label_based[label] / classifier.match_count, INIT_FITNESS)
                         if label in classifier.prediction else 0 for label in self.predicted_labels]
 
-            if cosine_matrix.any():
+            if cosine_matrix is not None:
+                # label similarity matrix in given
                 self.label_similarity = cosine_matrix[:, self.predicted_labels][self.predicted_labels, :]
             else:
+                # estimate label similarity matrix
                 for classifier in matching_classifiers:
                     if classifier.match_count > 0:
                         for idx in range(classifier.numerosity):
                             self.label_matrix.append(label_vector(classifier))
-                self.label_similarity = calculate_similarity(self.label_matrix)
+                if self.label_matrix:
+                    self.label_similarity = calculate_similarity(self.label_matrix)
+                else:
+                    return False
             return True
         else:
             return False
 
-    def refine_prediction(self, it, vote=None):
+    def cluster_labels(self, clustering_method=None, vote=None):
         self.label_clusters = []
-        try:
-            self.label_similarity = np.where(self.label_similarity > 0.1, self.label_similarity, 0)
-        except TypeError:
-            return [], None
-        n_connected, label_connected = connected_components(self.label_similarity)
+        label_similarity = np.where(self.label_similarity > self.sim_delta, self.label_similarity, 0)
+        n_connected, label_connected = connected_components(label_similarity)
+
         if n_connected > 1:
             for c in range(n_connected):
                 self.label_clusters.append(set([self.predicted_labels[node] for node in
                                                 range(self.predicted_labels.__len__()) if label_connected[node] == c]))
         else:
-            # return [], 0
-            _, self.label_clusters = density_based(K, self.label_matrix, 1 - self.label_similarity,
-                                                   self.predicted_labels)
+            if clustering_method == 'hfps':
+                _, self.label_clusters = density_based(K, self.label_matrix, 1 - self.label_similarity,
+                                                       self.predicted_labels)
+            elif clustering_method == 'wsc':
+                vertex_weights = np.zeros((self.predicted_labels.__len__(), self.predicted_labels.__len__()))
+                i = 0
+                for l in self.predicted_labels:
+                    vertex_weights[i][i] = max(vote[l], 0.01)
+                    i += 1
+                sc = SpectralClustering(n_clusters=K, affinity='precomputed', n_init=10,
+                                        assign_labels='discretize', weights=vertex_weights)
+                sc.fit_predict(self.label_similarity)
+                for n in range(K):
+                    self.label_clusters.append(set([self.predicted_labels[idx] for idx in range(self.predicted_labels.__len__())
+                                               if sc.labels_[idx] == n]))
+            else:
+                pass
 
-            vertex_weights = np.zeros((self.predicted_labels.__len__(), self.predicted_labels.__len__()))
-            i = 0
-            for l in self.predicted_labels:
-                vertex_weights[i][i] = max(vote[l], 0.01)
-                i += 1
-            sc = SpectralClustering(n_clusters=K, affinity='precomputed', n_init=10,
-                                    assign_labels='discretize', weights=vertex_weights)
-            sc.fit_predict(self.label_similarity)
-            label_clusters = []
-            for n in range(K):
-                label_clusters.append(set([self.predicted_labels[idx] for idx in range(self.predicted_labels.__len__())
-                                           if sc.labels_[idx] == n]))
+    def refine_prediction(self, it, classifiers):
         micro_pop_reduce = 0
         new_classifiers = []
-        for classifier in self.classifiers:
+        for classifier in classifiers:
             if classifier.prediction.__len__() > L_MIN:
                 try:
                     [new_classifiers.append(cl) for cl in breakdown_labelset(classifier, it, self.label_clusters)]
