@@ -11,6 +11,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from classifier_methods import ClassifierMethods
 from classifier import Classifier
 from graph_partitioning import GraphPart
+from prediction import Prediction
 from config import *
 
 
@@ -43,10 +44,12 @@ def distance(classifier, state):
     return d / classifier.specified_atts.__len__()
 
 
-class ClassifierSets(ClassifierMethods, GraphPart):
-    def __init__(self, attribute_info, dtypes, rand_func, sim_mode='global', cosine_matrix=None, popset=None):
+class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
+    def __init__(self, attribute_info, dtypes, rand_func, sim_delta, sim_mode='global', clustering_method=None,
+                 cosine_matrix=None, popset=None):
         ClassifierMethods.__init__(self, dtypes)
-        GraphPart.__init__(self)
+        GraphPart.__init__(self, sim_delta)
+        Prediction.__init__(self)
         self.popset = []
         self.matchset = []
         self.correctset = []
@@ -59,9 +62,14 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.random = rand_func
         self.cosine_matrix = cosine_matrix
         self.sim_mode = sim_mode
+        self.clustering_method = clustering_method
         self.k = 10
         if popset:
             self.popset = popset
+        if self.sim_mode == 'global' and not cosine_matrix.any():
+            raise Exception('similarity matrix required when sim_mode==Global!')
+        if self.clustering_method not in [None, 'hfps', 'wsc']:
+            raise Exception('undefined clustering method!')
 
     def make_matchset(self, state, target, it):
         covering = True
@@ -79,18 +87,43 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             lbls = set.union(*[self.popset[idx].prediction for idx in self.matchset])
             if target.issubset(lbls):
                 covering = False
-        for ind in self.matchset:
-            if self.popset[ind].prediction == target:
-                covering = False
-                return
+        # for ind in self.matchset:
+        #     if self.popset[ind].prediction == target:
+        #         covering = False
+        #         return target
 
         if covering:
             numerosity_sum = sum([self.popset[idx].numerosity for idx in self.matchset])
             new_classifier = Classifier()
             new_classifier.classifier_cover(numerosity_sum + 1, it, state, target,
                                             self.attribute_info, self.dtypes, self.random)
-            self.insert_classifier_pop(new_classifier, True)
-            self.matchset.append(self.popset.__len__() - 1)
+            new_classifiers, pop_reduce = self.apply_partitioning(it, [new_classifier])
+            if new_classifiers.__len__() > 0:
+                for cl in new_classifiers:
+                    new_classifier = Classifier()
+                    new_classifier.classifier_cover(numerosity_sum + 1, it, state, cl.prediction,
+                                                    self.attribute_info, self.dtypes, self.random)
+                    self.insert_classifier_pop(new_classifier, True)
+                    self.matchset.append(self.popset.__len__() - 1)
+            else:
+                self.insert_classifier_pop(new_classifier, True)
+                self.matchset.append(self.popset.__len__() - 1)
+            return target
+        else:
+            matching_cls = [self.popset[idx] for idx in self.matchset]
+            label_prediction, votes = Prediction.one_threshold(self, self.popset, self.matchset)
+            new_classifiers, pop_reduce = self.apply_partitioning(it, matching_cls, votes)
+            if new_classifiers.__len__() > 0:
+                [self.insert_classifier_pop(classifier, True) for classifier in new_classifiers]
+                self.matchset += [self.popset.__len__() - 1 - i for i in range(new_classifiers.__len__())]
+                remove_idx = [idx for idx in self.matchset if self.popset[idx].numerosity == 0]
+                i = 0
+                for idx in remove_idx:
+                    self.remove_from_pop(idx - i)
+                    self.remove_from_matchset(idx - i)
+                    i += 1
+                self.micro_pop_size -= pop_reduce
+            return label_prediction
 
     def make_eval_matchset(self, state):
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
@@ -108,25 +141,20 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
         # self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction.issubset(target)]
 
-    def apply_partitioning(self, it, vote=None):
+    def apply_partitioning(self, it, matching_cls, vote=None):
         if self.sim_mode == 'global':
-            graph_valid = self.build_graph([self.popset[idx] for idx in self.matchset], self.cosine_matrix)
+            graph_valid = self.build_sim_graph(matching_cls, self.cosine_matrix)
         else:
-            graph_valid = self.build_graph([self.popset[idx] for idx in self.matchset])
+            graph_valid = self.build_sim_graph(matching_cls)
+
         if graph_valid:
-            new_classifiers, pop_reduce = self.refine_prediction(it, vote)
-            if new_classifiers.__len__() > 0:
-                [self.insert_classifier_pop(classifier, True) for classifier in new_classifiers]
-                self.matchset += [self.popset.__len__()-1-i for i in range(new_classifiers.__len__())]
-                remove_idx = [idx for idx in self.matchset if self.popset[idx].numerosity == 0]
-                i = 0
-                for idx in remove_idx:
-                    self.remove_from_pop(idx - i)
-                    self.remove_from_matchset(idx - i)
-                    i += 1
-                self.micro_pop_size -= pop_reduce
+            if self.clustering_method == 'wsc' and not vote:
+                raise Exception('vote vector required when clustering_method == wsc!')
+            self.cluster_labels(self.clustering_method, vote)
+            new_classifiers, pop_reduce = self.refine_prediction(it, matching_cls)
+            return new_classifiers, pop_reduce
         else:
-            pass
+            return [], 0
 
 # deletion methods
     def deletion(self):
