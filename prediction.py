@@ -12,20 +12,21 @@ class Prediction:
         self.prediction = set()
         self.vote = {}
 
-    def max_prediction(self, popset, matchset, randint_func):
+    def max_prediction(self, matching_cls, randint_func):
         tiebreak_numerosity = {}
         self.prediction = set()
         self.vote = {}
 
-        def update_value(lp, ref):
+        def update_value(cl):
+            lp = cl.prediction
             if self.vote.get(tuple(lp)):
-                self.vote[tuple(lp)] += popset[ref].fitness * popset[ref].numerosity
-                tiebreak_numerosity[tuple(lp)] += popset[ref].numerosity
+                self.vote[tuple(lp)] += cl.fitness * cl.numerosity
+                tiebreak_numerosity[tuple(lp)] += cl.numerosity
             else:
-                self.vote[tuple(lp)] = popset[ref].fitness * popset[ref].numerosity
-                tiebreak_numerosity[tuple(lp)] = popset[ref].numerosity
+                self.vote[tuple(lp)] = cl.fitness * cl.numerosity
+                tiebreak_numerosity[tuple(lp)] = cl.numerosity
 
-        [update_value(popset[ref].prediction, ref) for ref in matchset]
+        [update_value(cl) for cl in matching_cls]
         max_vote = max(self.vote.values())
 
         if max_vote == 0:
@@ -44,19 +45,17 @@ class Prediction:
             [self.prediction.add(label) for label in candidate_lp[0]]
         return self.prediction
 
-    def aggregate_prediction(self, popset, matchset):
+    def aggregate_prediction(self, matching_cls):
         self.prediction = set()
         self.vote = {}
 
-        predicted_labels = set().union(*[popset[ref].prediction for ref
-                                         in matchset])
+        predicted_labels = set().union(*[cl.prediction for cl in matching_cls])
         self.vote = dict.fromkeys(predicted_labels)
         numerosity = dict.fromkeys(predicted_labels)
 
-        def update_value2(label, ref):
-            cl = popset[ref]
+        def update_value2(label, cl):
             if cl.match_count > 0:
-                label_acc = {k: acc/cl.match_count for k, acc in cl.label_based.items()}
+                label_acc = {k: acc/cl.match_count for k, acc in cl.label_based_tp.items()}
             else:
                 label_acc = {k: cl.fitness for k in cl.prediction}
             if self.vote[label]:
@@ -66,15 +65,15 @@ class Prediction:
                 self.vote[label] = label_acc[label]   # * cl.numerosity
                 numerosity[label] = cl.numerosity
 
-        def update_value(label, ref):
+        def update_value(label, cl):
             if self.vote[label]:
-                self.vote[label] += popset[ref].fitness * popset[ref].numerosity
-                numerosity[label] += popset[ref].numerosity
+                self.vote[label] += cl.fitness * cl.numerosity
+                numerosity[label] += cl.numerosity
             else:
-                self.vote[label] = popset[ref].fitness * popset[ref].numerosity
-                numerosity[label] = popset[ref].numerosity
+                self.vote[label] = cl.fitness * cl.numerosity
+                numerosity[label] = cl.numerosity
 
-        [update_value2(label, ref) for ref in matchset for label in popset[ref].prediction]
+        [update_value2(label, cl) for cl in matching_cls for label in cl.prediction]
         try:
             max_vote = max(self.vote.values())
             # self.vote = {k: v / numerosity[k] for k, v in self.vote.items()}
@@ -82,13 +81,13 @@ class Prediction:
         except (ZeroDivisionError, ValueError):
             pass
 
-    def one_threshold(self, popset, matchset):
-        self.aggregate_prediction(popset, matchset)
+    def one_threshold(self, matching_cls):
+        self.aggregate_prediction(matching_cls)
         [self.prediction.add(label) for label in self.vote.keys() if self.vote[label] >= THETA]
         return [self.prediction, self.vote]
 
-    def rank_cut(self, popset, matchset):
-        self.aggregate_prediction(popset, matchset)
+    def rank_cut(self, matching_cls):
+        self.aggregate_prediction(matching_cls)
         labels_sorted = list(
             {k: v for k, v in sorted(self.vote.items(), key=lambda item: item[1], reverse=True)}.keys())
         self.prediction = set(labels_sorted[0:RANK_CUT])
