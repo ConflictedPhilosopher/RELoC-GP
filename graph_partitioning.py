@@ -40,7 +40,7 @@ def calculate_similarity(label_matrix, measure=0):
 
 
 def breakdown_labelset(classifier, it, label_clusters):
-    prediction = set(classifier.label_based.keys())
+    prediction = set(classifier.label_based_tp.keys())
     new_classifiers = []
     label_subsets = [prediction.intersection(cluster) for cluster in label_clusters if
                      prediction.intersection(cluster).__len__() > 0]
@@ -51,7 +51,7 @@ def breakdown_labelset(classifier, it, label_clusters):
             new_classifier = Classifier()
             new_classifier.classifier_copy(classifier, it)
             new_classifier.prediction = cluster
-            new_classifier.label_based = {k: 0 for k in cluster}
+            new_classifier.label_based_tp = {k: 0 for k in cluster}
             new_classifier.parent_prediction.append(prediction)
             new_classifier.set_fitness(INIT_FITNESS)
             new_classifier.loss = 0.0
