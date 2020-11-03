@@ -17,6 +17,16 @@ from visualization import plot_bar, plot_heatmap
 from config import *
 
 
+def conditional_sim(label_matrix):
+    similarity = np.zeros([NO_LABELS, NO_LABELS])
+    for i in range(NO_LABELS):
+        for j in range(NO_LABELS):
+            first_label = [label[i] for label in label_matrix]
+            second_label = [label[j] for label in label_matrix]
+            similarity[i, j] = np.dot(first_label, second_label) / np.linalg.norm(second_label, 1)
+    return similarity
+
+
 class Preprocessing:
     def __init__(self):
         self.label_count = 0
@@ -38,6 +48,7 @@ class Preprocessing:
         self.data_train_folds = []
         self.data_valid_folds = []
         self.sim_matrix = None
+        self.conditional = None
         self.default_split = 0.7
 
     def main(self, train_test, cv, complete):
@@ -86,7 +97,9 @@ class Preprocessing:
                 label_set_list.append(label_set)
                 if label_set.__len__() < 1:  # removes samples with no label
                     drop_index.append(idx)
-            data = (data - data.mean())/data.std()
+            X = data.iloc[:, :NO_FEATURES]
+            X_stand = (X - X.mean())/X.std()
+            data.iloc[:, :NO_FEATURES] = X_stand
             data['labelset'] = label_set_list
             data.drop(drop_index, axis=0, inplace=True)
             return data
@@ -138,6 +151,7 @@ class Preprocessing:
         imbalance_label_sigma = sqrt(sum(temp) / (self.label_count - 1))
         self.cvir = imbalance_label_sigma / self.imbalance_mean
 
+        self.conditional = conditional_sim(label_matrix.to_numpy())
         label_matrix_sparse = sparse.csr_matrix(np.array(label_matrix).transpose())
         self.sim_matrix = cosine_similarity(label_matrix_sparse)
         plot_bar(class_count, 'frequency')
