@@ -9,7 +9,7 @@ import math
 from sklearn.metrics.pairwise import cosine_similarity
 
 from classifier_methods import ClassifierMethods
-from classifier import Classifier
+from classifier import Classifier, build_match
 from graph_partitioning import GraphPart
 from prediction import Prediction
 from config import *
@@ -45,7 +45,7 @@ def distance(classifier, state):
 
 
 class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
-    def __init__(self, attribute_info, dtypes, rand_func, sim_delta, sim_mode='global', clustering_method=None,
+    def __init__(self, attribute_info, dtypes, rand_func, sim_delta, label_cond, sim_mode='global', clustering_method=None,
                  cosine_matrix=None, popset=None):
         ClassifierMethods.__init__(self, dtypes)
         GraphPart.__init__(self, sim_delta)
@@ -62,6 +62,7 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
         self.random = rand_func
         self.cosine_matrix = cosine_matrix
         self.sim_mode = sim_mode
+        self.label_conditional = label_cond
         self.clustering_method = clustering_method
         self.k = 10
         if popset:
@@ -111,7 +112,7 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
             return target
         else:
             matching_cls = [self.popset[idx] for idx in self.matchset]
-            label_prediction, votes = Prediction.one_threshold(self, self.popset, self.matchset)
+            label_prediction, votes = Prediction.one_threshold(self, [self.popset[ref] for ref in self.matchset])
             new_classifiers, pop_reduce = self.apply_partitioning(it, matching_cls, votes)
             if new_classifiers.__len__() > 0:
                 [self.insert_classifier_pop(classifier, True) for classifier in new_classifiers]
@@ -334,7 +335,7 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
         changed = False
         atts_child = child_classifier.specified_atts
         cond_child = child_classifier.condition
-        # label_based_child = child_classifier.label_based
+        # label_based_child = child_classifier.label_based_tp
 
         def mutate_single(idx):
             if idx in atts_child:  # attribute specified in classifier condition
@@ -367,7 +368,7 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
             else:  # attribute not specified in classifier condition
                 if self.random.random() < (1 - PROB_HASH):
                     atts_child.append(idx)
-                    cond_child.append(self.classifier.build_match(state[idx], self.attribute_info[idx],
+                    cond_child.append(build_match(state[idx], self.attribute_info[idx],
                                                                   self.dtypes[idx], self.random))
                     return True
                 return False
@@ -458,6 +459,11 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
     def update_sets(self, target):
         m_size = sum([self.popset[ref].numerosity for ref in self.matchset])
         [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
+
+    def update_temp(self):
+        for cl in self.popset:
+            cl.estimate_label_based(self.label_conditional)
+        # [self.popset[ref].estimate_label_based(self.label_conditional) for ref in self.matchset]
 
     def clear_sets(self):
         self.matchset = []
