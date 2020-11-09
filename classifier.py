@@ -5,6 +5,7 @@
 #
 # ------------------------------------------------------------------------------
 from copy import deepcopy
+import numpy as np
 
 from config import *
 
@@ -19,6 +20,17 @@ def build_match(x, att_info, dtype, random_func):
         return x
     else:
         print("attribute type unidentified!")
+
+
+def conditional_sim(label_matrix):
+    label_count = label_matrix.shape[1]
+    similarity = np.zeros([label_count, label_count])
+    for i in range(label_count):
+        for j in range(label_count):
+            first_label = [label[i] for label in label_matrix]
+            second_label = [label[j] for label in label_matrix]
+            similarity[i, j] = np.dot(first_label, second_label) / np.linalg.norm(second_label, 1)
+    return similarity
 
 
 class Classifier:
@@ -133,15 +145,20 @@ class Classifier:
     def set_fitness(self, fitness):
         self.fitness = fitness
 
-    def estimate_label_based(self, conditional):
-        self.est_label_precision = {k: v / self.match_count for k, v in self.label_based_tp.items()}
-        if self.prediction.__len__() > 1:
-            estimate = dict.fromkeys(list(self.label_based_tp.keys()))
-            for l, tp in self.label_based_tp.items():
-                q = conditional[l, list(self.label_based_tp.keys())].sum() - 1
-                if q > 0:
-                    estimate[l] = tp / self.match_count * (1 / q)
-            self.est_label_precision = estimate
+    def estimate_label_based(self, samples):
+        # cc = [samples.columns[NO_FEATURES + c] for c in self.prediction]
+        labels = samples.iloc[:, NO_FEATURES:-1]
+        covered_count = samples.__len__()
+        self.est_label_precision = {k: labels.iloc[:, k].sum()/covered_count for k in self.label_based_tp.keys()}
+        # self.est_label_precision = {k: v / self.match_count for k, v in self.label_based_tp.items()}
+        # if self.prediction.__len__() > 1 and samples.__len__() > 1:
+        #     conditional = conditional_sim(labels.to_numpy())
+        #     estimate = dict.fromkeys(list(self.label_based_tp.keys()))
+        #     for idx, l in enumerate(sorted(list(self.prediction))):
+        #         q = conditional[idx, :].sum() - 1
+        #         if q > 0:
+        #             estimate[l] = self.label_based_tp[l] / self.match_count * (1 / q)
+        #     self.est_label_precision = estimate
 
 
 if __name__ == "__main__":
