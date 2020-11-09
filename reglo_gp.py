@@ -96,7 +96,7 @@ class REGLoGP(Prediction):
             self.train_iteration(sample)
 
             if (self.iteration % TRACK_FREQ) == 0 and self.iteration > 0:
-                self.population.update_temp()
+                self.population.update_temp(self.data.data_train_df)
                 self.timer.start_evaluation()
                 test_fscore = track_performance(samples_test)
                 train_fscore = track_performance(samples_training)
