@@ -56,6 +56,7 @@ class Prediction:
         def update_value2(label, cl):
             if cl.match_count > 0:
                 label_acc = {k: acc/cl.match_count for k, acc in cl.label_based_tp.items()}
+                label_acc = cl.est_label_precision
             else:
                 label_acc = {k: cl.fitness for k in cl.prediction}
             if self.vote[label]:
@@ -77,7 +78,7 @@ class Prediction:
         try:
             max_vote = max(self.vote.values())
             # self.vote = {k: v / numerosity[k] for k, v in self.vote.items()}
-            self.vote = {k: v / max_vote for k, v in self.vote.items()}
+            self.vote = {k: v / matching_cls.__len__() for k, v in self.vote.items()}
         except (ZeroDivisionError, ValueError):
             pass
 
