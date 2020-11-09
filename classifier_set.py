@@ -460,9 +460,10 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
         m_size = sum([self.popset[ref].numerosity for ref in self.matchset])
         [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
 
-    def update_temp(self):
+    def update_temp(self, data):
         for cl in self.popset:
-            cl.estimate_label_based(self.label_conditional)
+            covered_sample = data.loc[self.coverage(cl, data)]
+            cl.estimate_label_based(covered_sample)
         # [self.popset[ref].estimate_label_based(self.label_conditional) for ref in self.matchset]
 
     def clear_sets(self):
@@ -485,9 +486,13 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
         self.popset = [classifier for classifier in self.popset if classifier.match_count > 0]
 
     def coverage(self, classifier, data):
-        for sample in data:
-            if match(classifier, sample[0], self.dtypes):
-                return True
+        # TODO needs to be modified, is not consistent with the requirements of GA
+        covered_samples = []
+        for idx, sample in data.iterrows():
+            x = sample.tolist()[:NO_FEATURES]
+            if match(classifier, x, self.dtypes):
+                covered_samples.append(idx)
+        return covered_samples
 
 # other methods
     def get_pop_tracking(self):
