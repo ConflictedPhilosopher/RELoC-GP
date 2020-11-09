@@ -49,6 +49,7 @@ class Preprocessing:
         self.data_valid_folds = []
         self.sim_matrix = None
         self.conditional = None
+        self.data_train_df = None
         self.default_split = 0.7
 
     def main(self, train_test, cv, complete):
@@ -72,6 +73,7 @@ class Preprocessing:
             data_train, data_test = self.train_test_split(data_complete)
             self.data_train_list = self.format_data(data_train)
             self.data_test_list = self.format_data(data_test)
+            self.data_train_df = data_train
         else:
             print('Error: No data file specified')
             return
