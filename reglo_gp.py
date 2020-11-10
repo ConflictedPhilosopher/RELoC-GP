@@ -35,14 +35,13 @@ class REGLoGP(Prediction):
             pop = trained_model.get_model()
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
                                              sim_mode='global', sim_delta=0.1, clustering_method=None,
-                                             cosine_matrix=self.data.sim_matrix, popset=pop,
-                                             label_cond=self.data.conditional)
+                                             cosine_matrix=self.data.sim_matrix, popset=pop)
             self.population.micro_pop_size = sum([classifier.numerosity for classifier in pop])
             self.population.pop_average_eval()
         else:
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
                                              sim_mode='global', sim_delta=0.3, clustering_method=None,
-                                             cosine_matrix=self.data.sim_matrix, label_cond=self.data.conditional)
+                                             cosine_matrix=self.data.sim_matrix)
 
         self.iteration = 1
         try:
@@ -96,7 +95,6 @@ class REGLoGP(Prediction):
             self.train_iteration(sample)
 
             if (self.iteration % TRACK_FREQ) == 0 and self.iteration > 0:
-                self.population.update_temp(self.data.data_train_df)
                 self.timer.start_evaluation()
                 test_fscore = track_performance(samples_test)
                 train_fscore = track_performance(samples_training)
@@ -123,6 +121,7 @@ class REGLoGP(Prediction):
 
         self.timer.start_evaluation()
         self.population.pop_average_eval()
+        self.population.estimate_label_pr(self.data.data_train)
         [test_evaluation, test_class_precision, test_coverage] = self.evaluation()
         [train_evaluation, _, train_coverage] = self.evaluation(False)
         self.timer.stop_evaluation()
