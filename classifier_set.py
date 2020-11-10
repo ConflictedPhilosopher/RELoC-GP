@@ -44,8 +44,18 @@ def distance(classifier, state):
     return d / classifier.specified_atts.__len__()
 
 
+def coverage(classifier, data, dtypes):
+    # TODO needs to be modified, is not consistent with the requirements of GA
+    covered_samples = []
+    for idx, sample in data.iterrows():
+        x = sample.tolist()[:NO_FEATURES]
+        if match(classifier, x, dtypes):
+            covered_samples.append(idx)
+    return covered_samples
+
+
 class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
-    def __init__(self, attribute_info, dtypes, rand_func, sim_delta, label_cond, sim_mode='global', clustering_method=None,
+    def __init__(self, attribute_info, dtypes, rand_func, sim_delta, sim_mode='global', clustering_method=None,
                  cosine_matrix=None, popset=None):
         ClassifierMethods.__init__(self, dtypes)
         GraphPart.__init__(self, sim_delta)
@@ -62,9 +72,9 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
         self.random = rand_func
         self.cosine_matrix = cosine_matrix
         self.sim_mode = sim_mode
-        self.label_conditional = label_cond
         self.clustering_method = clustering_method
         self.k = 10
+
         if popset:
             self.popset = popset
         if self.sim_mode == 'global' and not cosine_matrix.any():
@@ -230,9 +240,9 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
             offspring1.set_fitness(FITNESS_RED * offspring1.fitness)
             offspring2.set_fitness(FITNESS_RED * offspring2.fitness)
 
-        if self.coverage(offspring1, data):
+        if coverage(offspring1, data, self.dtypes):
             self.insert_discovered_classifier(offspring1, parent1, parent2)
-        if self.coverage(offspring2, data):
+        if coverage(offspring2, data, self.dtypes):
             self.insert_discovered_classifier(offspring2, parent1, parent2)
 
     def selection(self, iteration):
@@ -460,11 +470,8 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
         m_size = sum([self.popset[ref].numerosity for ref in self.matchset])
         [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
 
-    def update_temp(self, data):
-        for cl in self.popset:
-            covered_sample = data.loc[self.coverage(cl, data)]
-            cl.estimate_label_based(covered_sample)
-        # [self.popset[ref].estimate_label_based(self.label_conditional) for ref in self.matchset]
+    def estimate_label_pr(self, data):
+        [cl.estimate_label_based(data.loc[coverage(cl, data, self.dtypes)]) for cl in self.popset]
 
     def clear_sets(self):
         self.matchset = []
@@ -484,15 +491,6 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
 
     def pop_compaction(self):
         self.popset = [classifier for classifier in self.popset if classifier.match_count > 0]
-
-    def coverage(self, classifier, data):
-        # TODO needs to be modified, is not consistent with the requirements of GA
-        covered_samples = []
-        for idx, sample in data.iterrows():
-            x = sample.tolist()[:NO_FEATURES]
-            if match(classifier, x, self.dtypes):
-                covered_samples.append(idx)
-        return covered_samples
 
 # other methods
     def get_pop_tracking(self):
