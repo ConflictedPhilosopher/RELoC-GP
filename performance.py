@@ -11,6 +11,82 @@ import numpy as np
 from config import *
 
 
+def exact_match(prediction, target):
+    if prediction == target:
+        return 1
+    else:
+        return 0
+
+
+def precision(prediction, target):
+    try:
+        return prediction.intersection(target).__len__() / target.__len__()
+    except ZeroDivisionError:
+        return 0.0
+
+
+def recall(prediction, target):
+    try:
+        return prediction.intersection(target).__len__() / prediction.__len__()
+    except ZeroDivisionError:
+        return 0.0
+
+
+def accuracy(prediction, target):
+    try:
+        return prediction.intersection(target).__len__()/prediction.union(target).__len__()
+    except ZeroDivisionError:
+        return 0.0
+
+
+def fscore(prediction, target):
+    try:
+        return 2 * prediction.intersection(target).__len__()\
+                              / (prediction.__len__() + target.__len__())
+    except ZeroDivisionError:
+        return 0.0
+
+
+def hamming_loss(prediction, target):
+    return prediction.symmetric_difference(target).__len__() / NO_LABELS
+
+
+def rank_loss(vote, target):
+    if not vote:
+        return 1.0
+
+    target_complement = set(range(0, NO_LABELS)).difference(target)
+    loss = 0
+    for tc in target_complement:
+        for t in target:
+            if vote.get(t, 0) < vote.get(tc, -1e-5):
+                loss += 1
+    try:
+        return loss / (target.__len__() * target_complement.__len__())
+    except ZeroDivisionError:
+        return 0.0
+
+
+def one_error(vote, target):
+    try:
+        labels_max_vote = {max(vote.items(), key=operator.itemgetter(1))[0]}
+    except ValueError:
+        labels_max_vote = set()
+    if labels_max_vote.intersection(target).__len__() > 0:
+        return 0
+    else:
+        return 1.0
+
+
+def coverage(vote, target):
+    ranking = {k: v for k, v in sorted(vote.items(), key=lambda item: item[1], reverse=True)}
+    prediction_ranks = list(ranking.values())
+    target_ranks = {}
+    for l in target:
+        target_ranks[l] = prediction_ranks.index(ranking.get(l, ))
+    print(2)
+
+
 class Performance:
     def __init__(self):
         self.exact_match_example = 0.0
@@ -30,84 +106,16 @@ class Performance:
         self.macro_fscore = 0.0
         self.roc_auc = 0.0
 
-    def exact_match(self, prediction, target):
-        if prediction == target:
-            return 1
-        else:
-            return 0
-
-    def precision(self, prediction, target):
-        try:
-            return prediction.intersection(target).__len__()/target.__len__()
-        except ZeroDivisionError:
-            return 0.0
-
-    def recall(self, prediction, target):
-        try:
-            return prediction.intersection(target).__len__()/prediction.__len__()
-        except ZeroDivisionError:
-            return 0.0
-
-    def accuracy(self, prediction, target):
-        try:
-            return prediction.intersection(target).__len__()/prediction.union(target).__len__()
-        except ZeroDivisionError:
-            return 0.0
-
-    def fscore(self, prediction, target):
-        try:
-            return 2 * prediction.intersection(target).__len__()\
-                                  / (prediction.__len__() + target.__len__())
-        except ZeroDivisionError:
-            return 0.0
-
-    def hamming_loss(self, prediction, target):
-        return prediction.symmetric_difference(target).__len__() / NO_LABELS
-
-    def rank_loss(self, vote, target):
-        if not vote:
-            return 1.0
-
-        target_complement = set(range(0, NO_LABELS)).difference(target)
-        loss = 0
-        for tc in target_complement:
-            for t in target:
-                if vote.get(t, 0) < vote.get(tc, -1e-5):
-                    loss += 1
-        try:
-            return loss / (target.__len__() * target_complement.__len__())
-        except ZeroDivisionError:
-            return 0.0
-
-    def one_error(self, vote, target):
-        try:
-            labels_max_vote = {max(vote.items(), key=operator.itemgetter(1))[0]}
-        except ValueError:
-            labels_max_vote = set()
-        if labels_max_vote.intersection(target).__len__() > 0:
-            return 0
-        else:
-            return 1.0
-
-    def coverage(self, vote, target):
-        ranking = {k: v for k, v in sorted(vote.items(), key=lambda item: item[1], reverse=True)}
-        prediction_ranks = list(ranking.values())
-        target_ranks = {}
-        for l in target:
-            target_ranks[l] = prediction_ranks.index(ranking.get(l, ))
-
-        print(2)
-
     def update_example_based(self, vote, prediction, target):
-        self.exact_match_example += self.exact_match(prediction, target)
-        self.hamming_loss_example += self.hamming_loss(prediction, target)
-        self.precision_example += self.precision(prediction, target)
-        self.recall_example += self.recall(prediction, target)
-        self.fscore_example += self.fscore(prediction, target)
-        self.accuracy_example += self.accuracy(prediction, target)
+        self.exact_match_example += exact_match(prediction, target)
+        self.hamming_loss_example += hamming_loss(prediction, target)
+        self.precision_example += precision(prediction, target)
+        self.recall_example += recall(prediction, target)
+        self.fscore_example += fscore(prediction, target)
+        self.accuracy_example += accuracy(prediction, target)
         if PREDICTION_METHOD == 2:
-            self.one_error_example += self.one_error(vote, target)
-            self.rank_loss_example += self.rank_loss(vote, target)
+            self.one_error_example += one_error(vote, target)
+            self.rank_loss_example += rank_loss(vote, target)
             # self.coverage(vote, target)
 
     def update_class_based(self, prediction, target):
