@@ -50,33 +50,21 @@ class Prediction:
         self.vote = {}
 
         predicted_labels = set().union(*[cl.prediction for cl in matching_cls])
-        self.vote = dict.fromkeys(predicted_labels)
-        numerosity = dict.fromkeys(predicted_labels)
+        self.vote = dict.fromkeys(predicted_labels, 0.0)
+        numerosity = dict.fromkeys(predicted_labels, 0)
 
-        def update_value2(label, cl):
-            if cl.match_count > 0:
-                label_acc = {k: acc/cl.match_count for k, acc in cl.label_based_tp.items()}
-                label_acc = cl.est_label_precision
+        def update_value2(cl):
+            if sum(cl.label_based.values()) > 0:
+                label_acc = cl.label_based
             else:
                 label_acc = {k: cl.fitness for k in cl.prediction}
-            if self.vote[label]:
-                self.vote[label] += label_acc[label]  # * cl.numerosity
+            for label in cl.prediction:
+                self.vote[label] += label_acc[label]
                 numerosity[label] += cl.numerosity
-            else:
-                self.vote[label] = label_acc[label]   # * cl.numerosity
-                numerosity[label] = cl.numerosity
 
-        def update_value(label, cl):
-            if self.vote[label]:
-                self.vote[label] += cl.fitness * cl.numerosity
-                numerosity[label] += cl.numerosity
-            else:
-                self.vote[label] = cl.fitness * cl.numerosity
-                numerosity[label] = cl.numerosity
-
-        [update_value2(label, cl) for cl in matching_cls for label in cl.prediction]
+        [update_value2(cl) for cl in matching_cls]
         try:
-            max_vote = max(self.vote.values())
+            # max_vote = max(self.vote.values())
             # self.vote = {k: v / numerosity[k] for k, v in self.vote.items()}
             self.vote = {k: v / matching_cls.__len__() for k, v in self.vote.items()}
         except (ZeroDivisionError, ValueError):
