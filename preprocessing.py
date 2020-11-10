@@ -17,16 +17,6 @@ from visualization import plot_bar, plot_heatmap
 from config import *
 
 
-def conditional_sim(label_matrix):
-    similarity = np.zeros([NO_LABELS, NO_LABELS])
-    for i in range(NO_LABELS):
-        for j in range(NO_LABELS):
-            first_label = [label[i] for label in label_matrix]
-            second_label = [label[j] for label in label_matrix]
-            similarity[i, j] = np.dot(first_label, second_label) / np.linalg.norm(second_label, 1)
-    return similarity
-
-
 class Preprocessing:
     def __init__(self):
         self.label_count = 0
@@ -48,8 +38,7 @@ class Preprocessing:
         self.data_train_folds = []
         self.data_valid_folds = []
         self.sim_matrix = None
-        self.conditional = None
-        self.data_train_df = None
+        self.data_train = None
         self.default_split = 0.7
 
     def main(self, train_test, cv, complete):
@@ -60,20 +49,19 @@ class Preprocessing:
                      range(5)]
 
         if train_test:
-            data_train = self.load_data(train_data_path)
+            self.data_train = self.load_data(train_data_path)
             data_test = self.load_data(test_data_path)
-            data_complete = pd.concat([data_train, data_test])
+            data_complete = pd.concat([self.data_train, data_test])
 
-            self.data_train_list = self.format_data(data_train)
+            self.data_train_list = self.format_data(self.data_train)
             self.data_test_list = self.format_data(data_test)
         elif cv:
             data_complete = self.cross_validation_folds(fold_path)
         elif complete:
             data_complete = self.load_data(data_path)
-            data_train, data_test = self.train_test_split(data_complete)
-            self.data_train_list = self.format_data(data_train)
+            self.data_train, data_test = self.train_test_split(data_complete)
+            self.data_train_list = self.format_data(self.data_train)
             self.data_test_list = self.format_data(data_test)
-            self.data_train_df = data_train
         else:
             print('Error: No data file specified')
             return
@@ -128,6 +116,14 @@ class Preprocessing:
     # characterize classes
     def characterize_labels(self, data_complete):
         self.label_count = NO_LABELS
+        self.label_ref = {k: v for k, v in enumerate(data_complete.columns[NO_FEATURES:-1])}
+        label_matrix = data_complete.iloc[:, NO_FEATURES:-1]
+        label_matrix_sparse = sparse.csr_matrix(np.array(label_matrix).transpose())
+        self.sim_matrix = cosine_similarity(label_matrix_sparse)
+
+    # ِ multi-label properties
+    def multilabel_properties(self, data_complete):
+        count = sum([len(label) for label in data_complete['labelset']])
         lp_dict = {}
         for label in data_complete['labelset']:
             if str(label) in lp_dict.keys():
@@ -136,14 +132,8 @@ class Preprocessing:
                 lp_dict[str(label)] = 1
         self.distinct_lp_count = lp_dict.__len__()
         self.imbalance_lp = max(lp_dict.values()) / min(lp_dict.values())
-        self.label_ref = {k: v for k, v in enumerate(data_complete.columns[NO_FEATURES:-1])}
-
-    # ِ multi-label properties
-    def multilabel_properties(self, data_complete):
-        count = sum([len(label) for label in data_complete['labelset']])
         self.card = count / data_complete.__len__()
         self.density = self.card / NO_LABELS
-        label_matrix = data_complete.iloc[:, NO_FEATURES:-1]
         counts = [data_complete[classs].sum() for classs in data_complete.columns[NO_FEATURES:-1]]
         class_count = dict(zip(list(data_complete.columns)[NO_FEATURES:-1], counts))
         class_pi = [val / data_complete.__len__() for val in list(class_count.values())]
@@ -152,10 +142,6 @@ class Preprocessing:
         temp = [(val - self.imbalance_mean) ** 2 for val in imbalance_label]
         imbalance_label_sigma = sqrt(sum(temp) / (self.label_count - 1))
         self.cvir = imbalance_label_sigma / self.imbalance_mean
-
-        self.conditional = conditional_sim(label_matrix.to_numpy())
-        label_matrix_sparse = sparse.csr_matrix(np.array(label_matrix).transpose())
-        self.sim_matrix = cosine_similarity(label_matrix_sparse)
         plot_bar(class_count, 'frequency')
         plot_heatmap(self.sim_matrix, self.label_ref)
         self.class_ratio = {k: v/data_complete.__len__() for k, v in enumerate(class_count.values())}
