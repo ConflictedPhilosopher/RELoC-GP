@@ -12,7 +12,7 @@ from config import *
 from classifier_set import ClassifierSets
 from prediction import Prediction
 from timer import Timer
-from performance import Performance
+from performance import Performance, fscore
 from reporting import Reporting
 from reboot_model import RebootModel
 from visualization import plot_image, plot_graph
@@ -62,17 +62,16 @@ class REGLoGP(Prediction):
         else:
             samples_training = self.data.data_train_list
             samples_test = self.data.data_test_list
-        performance = Performance()
         stop_training = False
         loss_old = 1.0
 
         def track_performance(samples):
-            fscore = 0
+            f_score = 0
             label_prediction = set()
             for sample in samples:
                 self.population.make_eval_matchset(sample[0])
                 if not self.population.matchset:
-                    fscore += performance.fscore(label_prediction, sample[1])
+                    f_score += fscore(label_prediction, sample[1])
                 else:
                     if PREDICTION_METHOD == 1:
                         label_prediction = Prediction.max_prediction(self, [self.population.popset[ref] for ref in
@@ -87,8 +86,8 @@ class REGLoGP(Prediction):
                         else:
                             print("prediction threshold method unidentified!")
 
-                    fscore += performance.fscore(label_prediction, sample[1])
-            return fscore / samples.__len__()
+                    f_score += fscore(label_prediction, sample[1])
+            return f_score / samples.__len__()
 
         while self.iteration < (MAX_ITERATION + 1) and not stop_training:
             sample = samples_training[self.iteration % samples_training.__len__()]
