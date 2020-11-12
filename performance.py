@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------
 import operator
 from sklearn.metrics import roc_curve, auc
-import numpy as np
+from numpy import zeros, isnan
 
 from config import *
 
@@ -156,15 +156,22 @@ class Performance:
         self.macro_fscore = 2 * (self.macro_precision * self.macro_recall) \
             / (self.macro_precision + self.macro_recall + 1e-3)
 
-    def roc(self, vote_list, target_list):
+    def roc(self, votes, targets):
+        vote_list = zeros((votes.__len__(), NO_LABELS))
+        target_list = zeros((votes.__len__(), NO_LABELS))
+        idx = 0
+        for vote, target in zip(votes, targets):
+            for k, v in vote.items():
+                vote_list[idx][k] = v
+            for t in target:
+                target_list[idx][t] = 1
+            idx += 1
+
         roc_auc = []
-        fpr = dict()
-        tpr = dict()
-        for l in range(2):
-            fpr[l], tpr[l], _ = roc_curve(target_list[:, l], vote_list[:, l])
-            roc_auc[l] = auc(fpr[l], tpr[l])
-        where_are_NaNs = np.isnan(roc_auc)
-        roc_auc[where_are_NaNs] = 0.0
+        for l in range(NO_LABELS):
+            fpr, tpr, _ = roc_curve(target_list[:, l], vote_list[:, l])
+            roc_auc.append(auc(fpr, tpr))
+        roc_auc = [0 if isnan(val) else val for val in roc_auc]
         self.roc_auc = sum(roc_auc) / NO_LABELS
 
     def get_report(self, sample_count):
@@ -183,7 +190,7 @@ class Performance:
         multi_label_perf['macro-re'] = self.macro_recall
         multi_label_perf['1e'] = self.one_error_example / sample_count
         multi_label_perf['rl'] = self.rank_loss_example / sample_count
-        multi_label_perf['auc'] = self.roc_auc
+        multi_label_perf['roc-auc'] = self.roc_auc
         return multi_label_perf
 
 # extended hamming loss
