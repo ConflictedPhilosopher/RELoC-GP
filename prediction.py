@@ -4,6 +4,9 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+from numpy import argmax, zeros, sqrt
+from sklearn.metrics import roc_curve
+
 from config import *
 
 
@@ -11,6 +14,7 @@ class Prediction:
     def __init__(self):
         self.prediction = set()
         self.vote = {}
+        self.theta = []
 
     def max_prediction(self, matching_cls, randint_func):
         tiebreak_numerosity = {}
@@ -69,6 +73,21 @@ class Prediction:
             self.vote = {k: v / matching_cls.__len__() for k, v in self.vote.items()}
         except (ZeroDivisionError, ValueError):
             pass
+
+    def optimize_theta(self, votes, targets):
+        vote_list = zeros((votes.__len__(), NO_LABELS))
+        target_list = zeros((votes.__len__(), NO_LABELS))
+        idx = 0
+        for vote, target in zip(votes, targets):
+            for k, v in vote.items():
+                vote_list[idx][k] = v
+            for t in target:
+                target_list[idx][t] = 1
+            idx += 1
+        for l in range(NO_LABELS):
+            fpr, tpr, thresholds = roc_curve(target_list[:, l], vote_list[:, l])
+            gmeans = sqrt(tpr * (1 - fpr))
+            self.theta.append(thresholds[argmax(gmeans)])
 
     def one_threshold(self, matching_cls):
         self.aggregate_prediction(matching_cls)
