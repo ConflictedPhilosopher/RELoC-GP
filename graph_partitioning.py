@@ -105,10 +105,10 @@ class GraphPart:
                 self.label_clusters.append(set([self.predicted_labels[node] for node in
                                                 range(self.predicted_labels.__len__()) if label_connected[node] == c]))
         else:
-            if clustering_method == 'hfps':
+            if clustering_method == 1:
                 _, self.label_clusters = density_based(K, self.label_matrix, 1 - self.label_similarity,
                                                        self.predicted_labels)
-            elif clustering_method == 'wsc':
+            elif clustering_method == 2:
                 vertex_weights = np.zeros((self.predicted_labels.__len__(), self.predicted_labels.__len__()))
                 i = 0
                 for l in self.predicted_labels:
