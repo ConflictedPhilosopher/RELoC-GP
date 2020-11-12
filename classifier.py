@@ -84,8 +84,8 @@ class Classifier:
         self.prediction = set(int(n) for n in classifier_info[NO_FEATURES].split(";"))
         label_precisions = classifier_info[NO_FEATURES + 1]
         self.label_based = {int(kv.split(":")[0]): float(kv.split(":")[1]) for kv in label_precisions.split(";")}
-        self.fitness, self.loss, self.numerosity, self.match_count, self.ave_matchset_size, self.init_time, self.ga_time\
-            = classifier_info[NO_FEATURES + 2:]
+        self.fitness, self.loss, self.numerosity, self.match_count, self.ave_matchset_size, self.init_time, \
+            self.ga_time = classifier_info[NO_FEATURES + 2:]
 
         # TODO parent prediction to be added
 
@@ -121,9 +121,10 @@ class Classifier:
     def set_fitness(self, fitness):
         self.fitness = fitness
 
-    def estimate_label_based(self, samples):
-        target_labels = samples.iloc[:, NO_FEATURES:-1]
-        self.label_based = {k: target_labels.iloc[:, k].sum()/samples.__len__() for k in self.prediction}
+    def estimate_label_based(self, target_labels):
+        for k in self.prediction:
+            count = [1 for labels in target_labels if k in labels]
+            self.label_based[k] = sum(count)/target_labels.__len__()
 
 
 if __name__ == "__main__":
