@@ -47,10 +47,11 @@ def distance(classifier, state):
 def coverage(classifier, data, dtypes):
     # TODO needs to be modified, is not consistent with the requirements of GA
     covered_samples = []
-    for idx, sample in data.iterrows():
-        x = sample.tolist()[:NO_FEATURES]
-        if match(classifier, x, dtypes):
+    idx = 0
+    for sample in data:
+        if match(classifier, sample[0], dtypes):
             covered_samples.append(idx)
+        idx += 1
     return covered_samples
 
 
@@ -71,16 +72,26 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
         self.dtypes = dtypes
         self.random = rand_func
         self.cosine_matrix = cosine_matrix
-        self.sim_mode = sim_mode
-        self.clustering_method = clustering_method
         self.k = 10
 
         if popset:
             self.popset = popset
-        if self.sim_mode == 'global' and not cosine_matrix.any():
+
+        if sim_mode == 'global' and not cosine_matrix.any():
             raise Exception('similarity matrix required when sim_mode==Global!')
-        if self.clustering_method not in [None, 'hfps', 'wsc']:
+        if sim_mode == 'global':
+            self.sim_mode = 1
+        else:
+            self.sim_mode = 0
+
+        if clustering_method not in [None, 'hfps', 'wsc']:
             raise Exception('undefined clustering method!')
+        if clustering_method == 'hfps':
+            self.clustering_method = 1
+        elif clustering_method == 'wsc':
+            self.clustering_method = 2
+        else:
+            self.clustering_method = 0
 
     def make_matchset(self, state, target, it):
         covering = True
@@ -153,13 +164,13 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
         # self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction.issubset(target)]
 
     def apply_partitioning(self, it, matching_cls, vote=None):
-        if self.sim_mode == 'global':
+        if self.sim_mode == 1:
             graph_valid = self.build_sim_graph(matching_cls, self.cosine_matrix)
         else:
             graph_valid = self.build_sim_graph(matching_cls)
 
         if graph_valid:
-            if self.clustering_method == 'wsc' and not vote:
+            if self.clustering_method == 2 and not vote:
                 raise Exception('vote vector required when clustering_method == wsc!')
             self.cluster_labels(self.clustering_method, vote)
             new_classifiers, pop_reduce = self.refine_prediction(it, matching_cls)
@@ -471,7 +482,8 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
         [self.popset[ref].update_params(m_size, target) for ref in self.matchset]
 
     def estimate_label_pr(self, data):
-        [cl.estimate_label_based(data.loc[coverage(cl, data, self.dtypes)]) for cl in self.popset]
+        for cl in self.popset:
+            cl.estimate_label_based([data[l][1] for l in coverage(cl, data, self.dtypes)])
 
     def clear_sets(self):
         self.matchset = []
