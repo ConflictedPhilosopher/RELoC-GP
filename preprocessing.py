@@ -38,7 +38,6 @@ class Preprocessing:
         self.data_train_folds = []
         self.data_valid_folds = []
         self.sim_matrix = None
-        self.data_train = None
         self.default_split = 0.7
 
     def main(self, train_test, cv, complete):
@@ -49,18 +48,18 @@ class Preprocessing:
                      range(5)]
 
         if train_test:
-            self.data_train = self.load_data(train_data_path)
+            data_train = self.load_data(train_data_path)
             data_test = self.load_data(test_data_path)
-            data_complete = pd.concat([self.data_train, data_test])
+            data_complete = pd.concat([data_train, data_test])
 
-            self.data_train_list = self.format_data(self.data_train)
+            self.data_train_list = self.format_data(data_train)
             self.data_test_list = self.format_data(data_test)
         elif cv:
             data_complete = self.cross_validation_folds(fold_path)
         elif complete:
             data_complete = self.load_data(data_path)
-            self.data_train, data_test = self.train_test_split(data_complete)
-            self.data_train_list = self.format_data(self.data_train)
+            data_train, data_test = self.train_test_split(data_complete)
+            self.data_train_list = self.format_data(data_train)
             self.data_test_list = self.format_data(data_test)
         else:
             print('Error: No data file specified')
