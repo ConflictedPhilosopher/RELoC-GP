@@ -33,6 +33,11 @@ class REGLoGP(Prediction):
         if REBOOT_MODEL:
             trained_model = RebootModel(self.exp, self.data.dtypes)
             pop = trained_model.get_model()
+            """
+            sim_mode = {global, local}
+            sim_delta = (0, 1]
+            clustering_mode = {None, hfps, wsc}
+            """
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
                                              sim_mode='global', sim_delta=0.1, clustering_method=None,
                                              cosine_matrix=self.data.sim_matrix, popset=pop)
@@ -40,7 +45,7 @@ class REGLoGP(Prediction):
             self.population.pop_average_eval()
         else:
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
-                                             sim_mode='global', sim_delta=0.3, clustering_method=None,
+                                             sim_mode='global', sim_delta=0.3, clustering_method='hfps',
                                              cosine_matrix=self.data.sim_matrix)
 
         self.iteration = 1
@@ -120,7 +125,7 @@ class REGLoGP(Prediction):
 
         self.timer.start_evaluation()
         self.population.pop_average_eval()
-        self.population.estimate_label_pr(self.data.data_train)
+        self.population.estimate_label_pr(samples_training)
         [test_evaluation, test_class_precision, test_coverage] = self.evaluation()
         [train_evaluation, _, train_coverage] = self.evaluation(False)
         self.timer.stop_evaluation()
@@ -221,18 +226,19 @@ class REGLoGP(Prediction):
             self.population.clear_sets()
 
         [update_performance(sample) for sample in samples]
+        target_list = [sample[1] for sample in samples]
+        Prediction.optimize_theta(self, vote_list, target_list)
+
         performance.micro_average()
         performance.macro_average()
+        performance.roc(vote_list, target_list)
         multi_label_perf = performance.get_report(samples.__len__())
+
         class_precision = {}
         for label in self.data.label_ref.keys():
             class_measure = performance.class_based_measure[label]
             class_precision[self.data.label_ref[label]] = class_measure['TP'] / (
                     class_measure['TP'] + class_measure['FP'] + 1)
-        """
-        target_list = []
-        performance.roc(vote_list, target_list)
-        """
         sample_coverage = 1 - (self.no_match / samples.__len__())
 
         return [multi_label_perf, class_precision, sample_coverage]
