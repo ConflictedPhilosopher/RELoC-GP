@@ -45,7 +45,7 @@ class REGLoGP(Prediction):
             self.population.pop_average_eval()
         else:
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
-                                             sim_mode='global', sim_delta=0.3, clustering_method='hfps',
+                                             sim_mode='global', sim_delta=0.3, clustering_method=None,
                                              cosine_matrix=self.data.sim_matrix)
 
         self.iteration = 1
@@ -83,8 +83,9 @@ class REGLoGP(Prediction):
                                                                             self.population.matchset], random.randint)
                     else:
                         if THRESHOLD == 1:
-                            label_prediction, _ = Prediction.one_threshold(self, [self.population.popset[ref]
-                                                                                  for ref in self.population.matchset])
+                            vote = Prediction.aggregate_prediction(self, [self.population.popset[ref]
+                                                                   for ref in self.population.matchset])
+                            label_prediction = Prediction.one_threshold(self, vote)
                         elif THRESHOLD == 2:
                             label_prediction, _ = Prediction.rank_cut(self, [self.population.popset[ref]
                                                                              for ref in self.population.matchset])
@@ -182,33 +183,26 @@ class REGLoGP(Prediction):
                 samples = self.data.data_train_folds[self.exp]
             else:
                 samples = self.data.data_train_list
+        if THRESHOLD == 1:
+            bi_partition = Prediction.one_threshold
+        elif THRESHOLD == 2:
+            bi_partition = Prediction.rank_cut
+        else:
+            raise Exception("prediction threshold method unidentified!")
 
         def update_performance(sample):
             self.population.make_eval_matchset(sample[0])
-            label_prediction = set()
-            vote = {}
-
+            vote0 = {}
             if not self.population.matchset:
                 self.no_match += 1
-                performance.update_example_based(vote, label_prediction, sample[1])
-                performance.update_class_based(label_prediction, sample[1])
             else:
                 if PREDICTION_METHOD == 1:
+                    # TODO max prediction not consistent with the remainder
                     label_prediction = Prediction.max_prediction(self, [self.population.popset[ref] for ref in
                                                                         self.population.matchset], random.randint)
                 else:
-                    if THRESHOLD == 1:
-                        label_prediction, vote = Prediction.one_threshold(self, [self.population.popset[ref]
-                                                                                 for ref in self.population.matchset])
-                    elif THRESHOLD == 2:
-                        label_prediction, vote = Prediction.rank_cut(self, [self.population.popset[ref]
-                                                                            for ref in self.population.matchset])
-                    else:
-                        print("prediction threshold method unidentified!")
-
-                performance.update_example_based(vote, label_prediction, sample[1])
-                performance.update_class_based(label_prediction, sample[1])
-
+                    vote0 = Prediction.aggregate_prediction(self, [self.population.popset[ref] for ref
+                                                                  in self.population.matchset])
                 if DEMO:
                     self.population.build_sim_graph([self.population.popset[idx] for idx in self.population.matchset])
                     cluster_dict = {0: self.population.predicted_labels}
@@ -222,12 +216,17 @@ class REGLoGP(Prediction):
                             for k, v in self.population.popset[idx].label_based.items():
                                 print(self.data.label_ref[k], round(v / self.population.popset[idx].match_count, 3))
 
-            vote_list.append(vote)
+            vote_list.append(vote0)
             self.population.clear_sets()
 
         [update_performance(sample) for sample in samples]
         target_list = [sample[1] for sample in samples]
         Prediction.optimize_theta(self, vote_list, target_list)
+
+        for t, vote in zip(target_list, vote_list):
+            prediction = bi_partition(self, vote)
+            performance.update_example_based(vote, prediction, t)
+            performance.update_class_based(prediction, t)
 
         performance.micro_average()
         performance.macro_average()
