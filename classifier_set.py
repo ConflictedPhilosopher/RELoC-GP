@@ -11,7 +11,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from classifier_methods import ClassifierMethods
 from classifier import Classifier, build_match
 from graph_partitioning import GraphPart
-from prediction import Prediction
+from prediction import aggregate_prediction, one_threshold
 from config import *
 
 
@@ -55,12 +55,11 @@ def coverage(classifier, data, dtypes):
     return covered_samples
 
 
-class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
+class ClassifierSets(ClassifierMethods, GraphPart):
     def __init__(self, attribute_info, dtypes, rand_func, sim_delta, sim_mode='global', clustering_method=None,
                  cosine_matrix=None, popset=None):
         ClassifierMethods.__init__(self, dtypes)
         GraphPart.__init__(self, sim_delta)
-        Prediction.__init__(self)
         self.popset = []
         self.matchset = []
         self.correctset = []
@@ -133,8 +132,8 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
             return target
         else:
             matching_cls = [self.popset[idx] for idx in self.matchset]
-            votes = Prediction.aggregate_prediction(self, [self.popset[ref] for ref in self.matchset])
-            label_prediction = Prediction.one_threshold(self, votes)
+            votes = aggregate_prediction([self.popset[ref] for ref in self.matchset])
+            label_prediction = one_threshold(votes)
             new_classifiers, pop_reduce = self.apply_partitioning(it, matching_cls, votes)
             if new_classifiers.__len__() > 0:
                 [self.insert_classifier_pop(classifier, True) for classifier in new_classifiers]
