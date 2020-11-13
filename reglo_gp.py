@@ -10,7 +10,7 @@ import random
 
 from config import *
 from classifier_set import ClassifierSets
-from prediction import Prediction
+from prediction import *
 from timer import Timer
 from performance import Performance, fscore
 from reporting import Reporting
@@ -19,9 +19,8 @@ from visualization import plot_image, plot_graph
 from analyze_model import analyze
 
 
-class REGLoGP(Prediction):
+class REGLoGP:
     def __init__(self, exp, data):
-        Prediction.__init__(self)
         self.exp = exp
         self.data = data
         self.tracked_loss = 0
@@ -29,15 +28,14 @@ class REGLoGP(Prediction):
         self.timer = Timer()
         self.track_to_plot = []
         random.seed(SEED_NUMBER + exp)
-
+        """
+        sim_mode = {global, local}
+        sim_delta = (0, 1]
+        clustering_mode = {None, hfps, wsc}
+        """
         if REBOOT_MODEL:
             trained_model = RebootModel(self.exp, self.data.dtypes)
             pop = trained_model.get_model()
-            """
-            sim_mode = {global, local}
-            sim_delta = (0, 1]
-            clustering_mode = {None, hfps, wsc}
-            """
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
                                              sim_mode='global', sim_delta=0.1, clustering_method=None,
                                              cosine_matrix=self.data.sim_matrix, popset=pop)
@@ -70,6 +68,13 @@ class REGLoGP(Prediction):
         stop_training = False
         loss_old = 1.0
 
+        if THRESHOLD == 1:
+            bi_partition = one_threshold
+        elif THRESHOLD == 2:
+            bi_partition = rank_cut
+        else:
+            raise Exception("prediction threshold method unidentified!")
+
         def track_performance(samples):
             f_score = 0
             label_prediction = set()
@@ -79,19 +84,12 @@ class REGLoGP(Prediction):
                     f_score += fscore(label_prediction, sample[1])
                 else:
                     if PREDICTION_METHOD == 1:
-                        label_prediction = Prediction.max_prediction(self, [self.population.popset[ref] for ref in
+                        label_prediction = max_prediction([self.population.popset[ref] for ref in
                                                                             self.population.matchset], random.randint)
                     else:
-                        if THRESHOLD == 1:
-                            vote = Prediction.aggregate_prediction(self, [self.population.popset[ref]
-                                                                   for ref in self.population.matchset])
-                            label_prediction = Prediction.one_threshold(self, vote)
-                        elif THRESHOLD == 2:
-                            label_prediction, _ = Prediction.rank_cut(self, [self.population.popset[ref]
-                                                                             for ref in self.population.matchset])
-                        else:
-                            print("prediction threshold method unidentified!")
-
+                        vote = aggregate_prediction([self.population.popset[ref]
+                                                     for ref in self.population.matchset])
+                        label_prediction = bi_partition(vote)
                     f_score += fscore(label_prediction, sample[1])
             return f_score / samples.__len__()
 
@@ -184,25 +182,29 @@ class REGLoGP(Prediction):
             else:
                 samples = self.data.data_train_list
         if THRESHOLD == 1:
-            bi_partition = Prediction.one_threshold
+            bi_partition = one_threshold
         elif THRESHOLD == 2:
-            bi_partition = Prediction.rank_cut
+            bi_partition = rank_cut
         else:
             raise Exception("prediction threshold method unidentified!")
 
-        def update_performance(sample):
+        def get_prediction_prob(sample):
             self.population.make_eval_matchset(sample[0])
             vote0 = {}
             if not self.population.matchset:
                 self.no_match += 1
             else:
+                print('target ', sample[1])
+                for ref in self.population.matchset:
+                    print(self.population.popset[ref].label_based)
+
                 if PREDICTION_METHOD == 1:
                     # TODO max prediction not consistent with the remainder
-                    label_prediction = Prediction.max_prediction(self, [self.population.popset[ref] for ref in
-                                                                        self.population.matchset], random.randint)
+                    label_prediction = max_prediction([self.population.popset[ref] for ref in
+                                                       self.population.matchset], random.randint)
                 else:
-                    vote0 = Prediction.aggregate_prediction(self, [self.population.popset[ref] for ref
-                                                                  in self.population.matchset])
+                    vote0 = aggregate_prediction([self.population.popset[ref] for ref
+                                                  in self.population.matchset])
                 if DEMO:
                     self.population.build_sim_graph([self.population.popset[idx] for idx in self.population.matchset])
                     cluster_dict = {0: self.population.predicted_labels}
@@ -219,12 +221,12 @@ class REGLoGP(Prediction):
             vote_list.append(vote0)
             self.population.clear_sets()
 
-        [update_performance(sample) for sample in samples]
+        [get_prediction_prob(sample) for sample in samples]
         target_list = [sample[1] for sample in samples]
-        Prediction.optimize_theta(self, vote_list, target_list)
+        theta = optimize_theta(vote_list, target_list)
 
         for t, vote in zip(target_list, vote_list):
-            prediction = bi_partition(self, vote)
+            prediction = bi_partition(vote, theta)
             performance.update_example_based(vote, prediction, t)
             performance.update_class_based(prediction, t)
 
