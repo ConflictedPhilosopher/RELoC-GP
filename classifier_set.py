@@ -133,7 +133,8 @@ class ClassifierSets(ClassifierMethods, GraphPart, Prediction):
             return target
         else:
             matching_cls = [self.popset[idx] for idx in self.matchset]
-            label_prediction, votes = Prediction.one_threshold(self, [self.popset[ref] for ref in self.matchset])
+            votes = Prediction.aggregate_prediction(self, [self.popset[ref] for ref in self.matchset])
+            label_prediction = Prediction.one_threshold(self, votes)
             new_classifiers, pop_reduce = self.apply_partitioning(it, matching_cls, votes)
             if new_classifiers.__len__() > 0:
                 [self.insert_classifier_pop(classifier, True) for classifier in new_classifiers]
