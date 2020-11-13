@@ -14,7 +14,7 @@ class Prediction:
     def __init__(self):
         self.prediction = set()
         self.vote = {}
-        self.theta = []
+        self.theta = [0.5] * NO_LABELS
 
     def max_prediction(self, matching_cls, randint_func):
         tiebreak_numerosity = {}
@@ -71,10 +71,12 @@ class Prediction:
             # max_vote = max(self.vote.values())
             # self.vote = {k: v / numerosity[k] for k, v in self.vote.items()}
             self.vote = {k: v / matching_cls.__len__() for k, v in self.vote.items()}
+            return self.vote
         except (ZeroDivisionError, ValueError):
             pass
 
     def optimize_theta(self, votes, targets):
+        self.theta = []
         vote_list = zeros((votes.__len__(), NO_LABELS))
         target_list = zeros((votes.__len__(), NO_LABELS))
         idx = 0
@@ -86,20 +88,18 @@ class Prediction:
             idx += 1
         for l in range(NO_LABELS):
             fpr, tpr, thresholds = roc_curve(target_list[:, l], vote_list[:, l])
-            gmeans = sqrt(tpr * (1 - fpr))
-            self.theta.append(thresholds[argmax(gmeans)])
+            g_means = sqrt(tpr * (1 - fpr))
+            self.theta.append(thresholds[argmax(g_means)])
 
-    def one_threshold(self, matching_cls):
-        self.aggregate_prediction(matching_cls)
-        [self.prediction.add(label) for label in self.vote.keys() if self.vote[label] >= THETA]
-        return [self.prediction, self.vote]
+    def one_threshold(self, vote):
+        [self.prediction.add(label) for label in vote.keys() if vote[label] >= self.theta[label]]
+        return self.prediction
 
-    def rank_cut(self, matching_cls):
-        self.aggregate_prediction(matching_cls)
+    def rank_cut(self, vote):
         labels_sorted = list(
-            {k: v for k, v in sorted(self.vote.items(), key=lambda item: item[1], reverse=True)}.keys())
+            {k: v for k, v in sorted(vote.items(), key=lambda item: item[1], reverse=True)}.keys())
         self.prediction = set(labels_sorted[0:RANK_CUT])
-        return [self.prediction, self.vote]
+        return self.prediction
 
     def get_prediction(self):
         return self.prediction
