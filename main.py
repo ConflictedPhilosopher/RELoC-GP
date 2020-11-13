@@ -47,7 +47,10 @@ def run_parallel(olo, cv, cmplt):
 
     avg_perf = avg_performance(ml_performance)
     print('Average ML performance:')
-    [print(metric + ' ' + str('%.5f' % val)) for metric, val in avg_perf.items()]
+    [print(metric + ' ' + str('%.5f' % val)) for metric, val in avg_perf.items() if metric in ('micro-f', 'macro-f',
+                                                                                               'micro-pr', 'macro-pr',
+                                                                                               'micro-re', 'macro-re',
+                                                                                               'rl')]
 
     avg_precision = avg_performance(class_precision)
     plot_bar(avg_precision, 'precision')
