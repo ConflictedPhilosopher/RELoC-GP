@@ -83,7 +83,7 @@ class Classifier:
 
         self.prediction = set(int(n) for n in classifier_info[NO_FEATURES].split(";"))
         label_precisions = classifier_info[NO_FEATURES + 1]
-        self.label_based = {int(kv.split(":")[0]): float(kv.split(":")[1]) for kv in label_precisions.split(";")}
+        self.label_based = {int(kv.split("%")[0]): float(kv.split("%")[1]) for kv in label_precisions.split(";")}
         self.fitness, self.loss, self.numerosity, self.match_count, self.ave_matchset_size, self.init_time, \
             self.ga_time = classifier_info[NO_FEATURES + 2:]
 
