@@ -121,7 +121,6 @@ class Performance:
     def update_class_based(self, prediction, target):
         tp = target.intersection(prediction)
         fp = prediction.difference(target.intersection(prediction))
-        tn = set(range(0, NO_LABELS)).difference(target).difference(prediction)
         fn = target.difference(target.intersection(prediction))
 
         def update_single(label, where):
@@ -130,7 +129,6 @@ class Performance:
             self.class_based_measure[label] = class_dict
         [update_single(label, 'TP') for label in tp]
         [update_single(label, 'FP') for label in fp]
-        [update_single(label, 'TN') for label in tn]
         [update_single(label, 'FN') for label in fn]
 
     def micro_average(self):
