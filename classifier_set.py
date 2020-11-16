@@ -4,7 +4,7 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
-import math
+from math import sqrt, exp
 
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -34,13 +34,16 @@ def match(classifier, state, dtypes):
 def similarity(classifier, state):
     center = [(att[1] + att[0]) / 2 for att in classifier.condition]
     x = [state[idx] for idx in classifier.specified_atts]
-    return cosine_similarity([center, x])[0][1]
+    try:
+        return cosine_similarity([center, x])[0][1]
+    except ValueError:
+        return 0.0
 
 
 def distance(classifier, state):
     center = [(att[1] + att[0]) / 2 for att in classifier.condition]
-    d = math.sqrt(sum([(state[att] - center[idx])**2 for (idx, att)
-                       in enumerate(classifier.specified_atts)]))
+    d = sqrt(sum([(state[att] - center[idx])**2 for (idx, att)
+             in enumerate(classifier.specified_atts)]))
     return d / classifier.specified_atts.__len__()
 
 
@@ -53,6 +56,13 @@ def coverage(classifier, data, dtypes):
             covered_samples.append(idx)
         idx += 1
     return covered_samples
+
+
+def ga_coverage(classifier, data, dtypes):
+    for sample in data:
+        if match(classifier, sample[0], dtypes):
+            return True
+    return False
 
 
 class ClassifierSets(ClassifierMethods, GraphPart):
@@ -160,8 +170,8 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             self.matchset = knn_matchset
 
     def make_correctset(self, target):
-        self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
-        # self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction.issubset(target)]
+        # self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
+        self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction.issubset(target)]
 
     def apply_partitioning(self, it, matching_cls, vote=None):
         if self.sim_mode == 1:
@@ -251,9 +261,9 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             offspring1.set_fitness(FITNESS_RED * offspring1.fitness)
             offspring2.set_fitness(FITNESS_RED * offspring2.fitness)
 
-        if coverage(offspring1, data, self.dtypes):
+        if ga_coverage(offspring1, data, self.dtypes):
             self.insert_discovered_classifier(offspring1, parent1, parent2)
-        if coverage(offspring2, data, self.dtypes):
+        if ga_coverage(offspring2, data, self.dtypes):
             self.insert_discovered_classifier(offspring2, parent1, parent2)
 
     def selection(self, iteration):
