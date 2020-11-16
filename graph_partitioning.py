@@ -8,6 +8,7 @@ from scipy import sparse
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse.csgraph import connected_components
+from sklearn.cluster import SpectralClustering
 
 from hfps_clustering import density_based
 from classifier import Classifier
@@ -38,76 +39,98 @@ def calculate_similarity(label_matrix, measure=0):
                 similarity[i, j] = np.dot(first_label, second_label) / np.linalg.norm(second_label, 1)
 
 
+def breakdown_labelset(classifier, it, label_clusters):
+    prediction = classifier.prediction
+    new_classifiers = []
+    label_subsets = [prediction.intersection(cluster) for cluster in label_clusters if
+                     prediction.intersection(cluster).__len__() > 0]
+
+    if label_subsets.__len__() > 1:
+        classifier.update_numerosity(-1)
+        for cluster in label_subsets:
+            new_classifier = Classifier()
+            new_classifier.classifier_copy(classifier, it)
+            new_classifier.prediction = cluster
+            new_classifier.label_based = {k: 0.0 for k in cluster}
+            new_classifier.parent_prediction.append(prediction)
+            new_classifier.set_fitness(INIT_FITNESS)
+            new_classifier.loss = 0.0
+            new_classifiers.append(new_classifier)
+    if new_classifiers.__len__() > 0:
+        return new_classifiers
+
+
 class GraphPart:
-    def __init__(self):
-        self.classifiers = []
+    def __init__(self, sim_delta):
         self.label_clusters = []
         self.label_similarity = None
         self.predicted_labels = []
         self.label_matrix = []
+        self.sim_delta = sim_delta
 
-    def build_graph(self, matching_classifiers):
-        self.label_clusters = []
+    def build_sim_graph(self, matching_classifiers, cosine_matrix=None):
         self.label_matrix = []
-        self.classifiers = matching_classifiers
-        if any([classifier.prediction.__len__() > 1 for classifier in self.classifiers]):
-            self.predicted_labels = sorted(list(set().union(*[classifier.prediction for classifier in self.classifiers])))
+        if any([classifier.prediction.__len__() > 1 for classifier in matching_classifiers]):
+            self.predicted_labels = sorted(list(set().union(*[classifier.prediction for classifier
+                                                              in matching_classifiers])))
 
             def label_vector(classifier):
                 return [max(classifier.label_based[label] / classifier.match_count, INIT_FITNESS)
                         if label in classifier.prediction else 0 for label in self.predicted_labels]
 
-            for classifier in matching_classifiers:
-                if classifier.match_count > 0:
-                    for idx in range(classifier.numerosity):
-                        self.label_matrix.append(label_vector(classifier))
-            self.label_similarity = calculate_similarity(self.label_matrix)
+            if cosine_matrix is not None:
+                # label similarity matrix in given
+                self.label_similarity = cosine_matrix[:, self.predicted_labels][self.predicted_labels, :]
+            else:
+                # estimate label similarity matrix
+                for classifier in matching_classifiers:
+                    if classifier.match_count > 0:
+                        for idx in range(classifier.numerosity):
+                            self.label_matrix.append(label_vector(classifier))
+                if self.label_matrix:
+                    self.label_similarity = calculate_similarity(self.label_matrix)
+                else:
+                    return False
+            return True
         else:
-            return
+            return False
 
-    def refine_prediction(self, it, target):
+    def cluster_labels(self, clustering_method=None, vote=None):
         self.label_clusters = []
-        try:
-            self.label_similarity = np.where(self.label_similarity > 0.7, self.label_similarity, 0)
-        except TypeError:
-            return [], None
-        n_connected, label_connected = connected_components(self.label_similarity)
+        label_similarity = np.where(self.label_similarity > self.sim_delta, self.label_similarity, 0)
+        n_connected, label_connected = connected_components(label_similarity)
+
         if n_connected > 1:
             for c in range(n_connected):
-                temp = [self.predicted_labels[node] for node in range(self.predicted_labels.__len__())
-                        if label_connected[node] == c]
-                self.label_clusters.append(set(temp))
+                self.label_clusters.append(set([self.predicted_labels[node] for node in
+                                                range(self.predicted_labels.__len__()) if label_connected[node] == c]))
         else:
-            label_clusters_unmerged, self.label_clusters = density_based(K, self.label_matrix, 1 - self.label_similarity,
-                                                                         self.predicted_labels)
+            if clustering_method == 1:
+                _, self.label_clusters = density_based(K, self.label_matrix, 1 - self.label_similarity,
+                                                       self.predicted_labels)
+            elif clustering_method == 2:
+                vertex_weights = np.zeros((self.predicted_labels.__len__(), self.predicted_labels.__len__()))
+                i = 0
+                for l in self.predicted_labels:
+                    vertex_weights[i][i] = max(vote[l], 0.01)
+                    i += 1
+                sc = SpectralClustering(n_clusters=K, affinity='precomputed', n_init=10,
+                                        assign_labels='discretize', weights=vertex_weights)
+                sc.fit_predict(self.label_similarity)
+                for n in range(K):
+                    self.label_clusters.append(set([self.predicted_labels[idx] for idx in range(self.predicted_labels.__len__())
+                                               if sc.labels_[idx] == n]))
+            else:
+                pass
 
+    def refine_prediction(self, it, classifiers):
         micro_pop_reduce = 0
         new_classifiers = []
-        for classifier in self.classifiers:
+        for classifier in classifiers:
             if classifier.prediction.__len__() > L_MIN:
                 try:
-                    [new_classifiers.append(cl) for cl in self.breakdown_labelset(classifier, it, target)]
+                    [new_classifiers.append(cl) for cl in breakdown_labelset(classifier, it, self.label_clusters)]
                     micro_pop_reduce += 1
                 except TypeError:
                     pass
         return new_classifiers, micro_pop_reduce
-
-    def breakdown_labelset(self, classifier, it, target):
-        prediction = set(classifier.label_based.keys())
-        new_classifiers = []
-        label_subsets = [prediction.intersection(cluster) for cluster in self.label_clusters if
-                         prediction.intersection(cluster).__len__() > 0]
-
-        if label_subsets.__len__() > 1:
-            classifier.update_numerosity(-1)
-            for cluster in label_subsets:
-                new_classifier = Classifier()
-                new_classifier.classifier_copy(classifier, it)
-                new_classifier.prediction = cluster
-                new_classifier.label_based = {k: 1 if k in cluster.intersection(target) else 0 for k in cluster}
-                new_classifier.match_count = 1
-                new_classifier.parent_prediction.append(prediction)
-                new_classifier.set_fitness(INIT_FITNESS)
-                new_classifiers.append(new_classifier)
-        if new_classifiers.__len__() > 0:
-            return new_classifiers

@@ -39,7 +39,7 @@ def run_parallel(olo, cv, cmplt):
     arg_instances = [[idx, data] for idx in range(n_jobs)]
     results = Parallel(n_jobs=n_jobs, verbose=1, backend="multiprocessing")(map(delayed(handle_model), arg_instances))
     end = time.time()
-    print('multi-threading time ', (end - start)/60)
+    print('multi-threading time = {:.3f}'.format((end - start)/60))
 
     ml_performance = [result[0] for result in results]
     class_precision = [result[1] for result in results]
@@ -47,7 +47,10 @@ def run_parallel(olo, cv, cmplt):
 
     avg_perf = avg_performance(ml_performance)
     print('Average ML performance:')
-    [print(metric + ' ' + str('%.5f' % val)) for metric, val in avg_perf.items()]
+    [print(metric + ' ' + str('%.5f' % val)) for metric, val in avg_perf.items() if metric in ('micro-f', 'macro-f',
+                                                                                               'micro-pr', 'macro-pr',
+                                                                                               'micro-re', 'macro-re',
+                                                                                               'rl')]
 
     avg_precision = avg_performance(class_precision)
     plot_bar(avg_precision, 'precision')

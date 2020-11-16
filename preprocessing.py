@@ -26,7 +26,7 @@ class Preprocessing:
         self.unseen_test_labels = set()
         self.card = 0.0
         self.density = 0.0
-        self.class_count = dict()
+        self.class_ratio = dict()
         self.imbalance_lp = 0
         self.imbalance_mean = 0.0
         self.cvir = 0.0
@@ -86,6 +86,9 @@ class Preprocessing:
                 label_set_list.append(label_set)
                 if label_set.__len__() < 1:  # removes samples with no label
                     drop_index.append(idx)
+            X = data.iloc[:, :NO_FEATURES]
+            X_stand = (X - X.mean())/X.std()
+            data.iloc[:, :NO_FEATURES] = X_stand
             data['labelset'] = label_set_list
             data.drop(drop_index, axis=0, inplace=True)
             return data
@@ -112,6 +115,14 @@ class Preprocessing:
     # characterize classes
     def characterize_labels(self, data_complete):
         self.label_count = NO_LABELS
+        self.label_ref = {k: v for k, v in enumerate(data_complete.columns[NO_FEATURES:-1])}
+        label_matrix = data_complete.iloc[:, NO_FEATURES:-1]
+        label_matrix_sparse = sparse.csr_matrix(np.array(label_matrix).transpose())
+        self.sim_matrix = cosine_similarity(label_matrix_sparse)
+
+    # ِ multi-label properties
+    def multilabel_properties(self, data_complete):
+        count = sum([len(label) for label in data_complete['labelset']])
         lp_dict = {}
         for label in data_complete['labelset']:
             if str(label) in lp_dict.keys():
@@ -120,27 +131,19 @@ class Preprocessing:
                 lp_dict[str(label)] = 1
         self.distinct_lp_count = lp_dict.__len__()
         self.imbalance_lp = max(lp_dict.values()) / min(lp_dict.values())
-        self.label_ref = {k: v for k, v in enumerate(data_complete.columns[NO_FEATURES:-1])}
-
-    # ِ multi-label properties
-    def multilabel_properties(self, data_complete):
-        count = sum([len(label) for label in data_complete['labelset']])
         self.card = count / data_complete.__len__()
         self.density = self.card / NO_LABELS
-        label_matrix = data_complete.iloc[:, NO_FEATURES:-1]
         counts = [data_complete[classs].sum() for classs in data_complete.columns[NO_FEATURES:-1]]
-        self.class_count = dict(zip(list(data_complete.columns)[NO_FEATURES:-1], counts))
-        class_pi = [val / data_complete.__len__() for val in list(self.class_count.values())]
+        class_count = dict(zip(list(data_complete.columns)[NO_FEATURES:-1], counts))
+        class_pi = [val / data_complete.__len__() for val in list(class_count.values())]
         imbalance_label = [max(class_pi) / val for val in class_pi]
         self.imbalance_mean = sum(imbalance_label) / NO_LABELS
         temp = [(val - self.imbalance_mean) ** 2 for val in imbalance_label]
         imbalance_label_sigma = sqrt(sum(temp) / (self.label_count - 1))
         self.cvir = imbalance_label_sigma / self.imbalance_mean
-
-        label_matrix_sparse = sparse.csr_matrix(np.array(label_matrix).transpose())
-        self.sim_matrix = cosine_similarity(label_matrix_sparse)
-        plot_bar(self.class_count, 'frequency')
+        plot_bar(class_count, 'frequency')
         plot_heatmap(self.sim_matrix, self.label_ref)
+        self.class_ratio = {k: v/data_complete.__len__() for k, v in enumerate(class_count.values())}
 
         label_list = []
         if self.data_train_list:

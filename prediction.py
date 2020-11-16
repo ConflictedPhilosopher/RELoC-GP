@@ -4,97 +4,114 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
+from numpy import argmax, zeros, sqrt, isnan, all, nan_to_num
+from sklearn.metrics import roc_curve, precision_recall_curve
+
 from config import *
 
 
-class Prediction:
-    def __init__(self):
-        self.prediction = set()
-        self.vote = {}
+def max_prediction(matching_cls, randint_func):
+    tiebreak_numerosity = {}
+    prediction = set()
+    vote = {}
 
-    def max_prediction(self, popset, matchset, randint_func):
-        tiebreak_numerosity = {}
-        self.prediction = set()
-        self.vote = {}
-
-        def update_value(lp, ref):
-            if self.vote.get(tuple(lp)):
-                self.vote[tuple(lp)] += popset[ref].fitness * popset[ref].numerosity
-                tiebreak_numerosity[tuple(lp)] += popset[ref].numerosity
-            else:
-                self.vote[tuple(lp)] = popset[ref].fitness * popset[ref].numerosity
-                tiebreak_numerosity[tuple(lp)] = popset[ref].numerosity
-
-        [update_value(popset[ref].prediction, ref) for ref in matchset]
-        max_vote = max(self.vote.values())
-
-        if max_vote == 0:
-            [self.prediction.add(label) for label in list(self.vote.keys())
-                [randint_func(0, self.vote.keys().__len__() - 1)]]
-            return
-        candidate_lp = [lp for lp, v in self.vote.items() if v == max_vote]
-        if candidate_lp.__len__() > 1:
-            max_numerosity = max([tiebreak_numerosity[lp] for lp in candidate_lp])
-            candidate_lp = [lp for lp in candidate_lp if tiebreak_numerosity[lp] == max_numerosity]
-            if candidate_lp.__len__() > 1:
-                [self.prediction.add(label) for label in candidate_lp[randint_func(0, candidate_lp.__len__() - 1)]]
-            else:
-                [self.prediction.add(label) for label in candidate_lp[0]]
+    def update_value(cl):
+        lp = cl.prediction
+        if vote.get(tuple(lp)):
+            vote[tuple(lp)] += cl.fitness * cl.numerosity
+            tiebreak_numerosity[tuple(lp)] += cl.numerosity
         else:
-            [self.prediction.add(label) for label in candidate_lp[0]]
-        return self.prediction
+            vote[tuple(lp)] = cl.fitness * cl.numerosity
+            tiebreak_numerosity[tuple(lp)] = cl.numerosity
 
-    def aggregate_prediction(self, popset, matchset):
-        self.prediction = set()
-        self.vote = {}
+    [update_value(cl) for cl in matching_cls]
+    max_vote = max(vote.values())
 
-        predicted_labels = set().union(*[popset[ref].prediction for ref
-                                         in matchset])
-        self.vote = dict.fromkeys(predicted_labels)
-        numerosity = dict.fromkeys(predicted_labels)
+    if max_vote == 0:
+        [prediction.add(label) for label in list(vote.keys())
+            [randint_func(0, vote.keys().__len__() - 1)]]
+        return prediction
+    candidate_lp = [lp for lp, v in vote.items() if v == max_vote]
+    if candidate_lp.__len__() > 1:
+        max_numerosity = max([tiebreak_numerosity[lp] for lp in candidate_lp])
+        candidate_lp = [lp for lp in candidate_lp if tiebreak_numerosity[lp] == max_numerosity]
+        if candidate_lp.__len__() > 1:
+            [prediction.add(label) for label in candidate_lp[randint_func(0, candidate_lp.__len__() - 1)]]
+        else:
+            [prediction.add(label) for label in candidate_lp[0]]
+    else:
+        [prediction.add(label) for label in candidate_lp[0]]
+    return prediction
 
-        def update_value2(label, ref):
-            cl = popset[ref]
-            if cl.match_count > 0:
-                label_acc = {k: acc/cl.match_count for k, acc in cl.label_based.items()}
-            else:
-                label_acc = {k: cl.fitness for k in cl.prediction}
-            if self.vote[label]:
-                self.vote[label] += label_acc[label] * cl.numerosity
-                numerosity[label] += cl.numerosity
-            else:
-                self.vote[label] = label_acc[label] * cl.numerosity
-                numerosity[label] = cl.numerosity
 
-        def update_value(label, ref):
-            if self.vote[label]:
-                self.vote[label] += popset[ref].fitness * popset[ref].numerosity
-                numerosity[label] += popset[ref].numerosity
-            else:
-                self.vote[label] = popset[ref].fitness * popset[ref].numerosity
-                numerosity[label] = popset[ref].numerosity
+def aggregate_prediction(matching_cls):
+    vote = {}
 
-        [update_value2(label, ref) for ref in matchset for label in popset[ref].prediction]
-        try:
-            # max_vote = max(self.vote.values())
-            self.vote = {k: v / numerosity[k] for k, v in self.vote.items()}
-        except (ZeroDivisionError, ValueError):
-            pass
+    predicted_labels = set().union(*[cl.prediction for cl in matching_cls])
+    vote = dict.fromkeys(predicted_labels, 0.0)
+    numerosity = dict.fromkeys(predicted_labels, 0)
 
-    def one_threshold(self, popset, matchset):
-        self.aggregate_prediction(popset, matchset)
-        [self.prediction.add(label) for label in self.vote.keys() if self.vote[label] >= THETA]
-        return [self.prediction, self.vote]
+    def update_value(cl):
+        if sum(cl.label_based.values()) > 0:
+            label_acc = cl.label_based
+        else:
+            label_acc = {k: cl.fitness for k in cl.prediction}
+        for label in cl.prediction:
+            vote[label] += label_acc[label]
+            numerosity[label] += 1
 
-    def rank_cut(self, popset, matchset):
-        self.aggregate_prediction(popset, matchset)
-        labels_sorted = list(
-            {k: v for k, v in sorted(self.vote.items(), key=lambda item: item[1], reverse=True)}.keys())
-        self.prediction = set(labels_sorted[0:RANK_CUT])
-        return [self.prediction, self.vote]
+    [update_value(cl) for cl in matching_cls]
+    try:
+        max_vote = max(vote.values())
+        # vote = {k: v / numerosity[k] for k, v in vote.items()}
+        vote = {k: v / max_vote for k, v in vote.items()}
+        return vote
+    except (ZeroDivisionError, ValueError):
+        pass
 
-    def get_prediction(self):
-        return self.prediction
+
+def optimize_theta(votes, targets):
+    theta = []
+    vote_list = zeros((votes.__len__(), NO_LABELS))
+    target_list = zeros((votes.__len__(), NO_LABELS))
+    idx = 0
+    for vote, target in zip(votes, targets):
+        for k, v in vote.items():
+            vote_list[idx][k] = v
+        for t in target:
+            target_list[idx][t] = 1
+        idx += 1
+    for l in range(NO_LABELS):
+        if sum(target_list[:, l]) == 0:
+            theta.append(1.0)
+        else:
+            precision, recall, thresholds = precision_recall_curve(target_list[:, l], vote_list[:, l])
+            fscore = nan_to_num((2 * precision * recall) / (precision + recall))
+            theta.append(thresholds[argmax(fscore)])
+        # fpr, tpr, thresholds = roc_curve(target_list[:, l], vote_list[:, l])
+        # if all(isnan(tpr)):
+        #     theta.append(1.0)
+        # else:
+        #     g_means = sqrt(tpr * (1 - fpr))
+        #     t = thresholds[argmax(g_means)]
+        #     if t > 1:
+        #         t = thresholds[argmax(g_means) + 1]
+        #     theta.append(t)
+    return theta
+
+
+def one_threshold(vote, theta=None):
+    if not theta:
+        theta = [0.5] * NO_LABELS
+    prediction = set()
+    [prediction.add(label) for label in vote.keys() if vote[label] >= theta[label]]
+    return prediction
+
+
+def rank_cut(vote):
+    labels_sorted = list(
+        {k: v for k, v in sorted(vote.items(), key=lambda item: item[1], reverse=True)}.keys())
+    return set(labels_sorted[0:RANK_CUT])
 
 
 # p-cut

@@ -9,6 +9,18 @@ from copy import deepcopy
 from config import *
 
 
+def build_match(x, att_info, dtype, random_func):
+    if dtype:
+        att_range = att_info[1] - att_info[0]
+        radius_l = random_func.randint(25, 75) * 0.01 * (att_range / 2.0)
+        radius_r = random_func.randint(25, 75) * 0.01 * (att_range / 2.0)
+        return [max(att_info[0], (x - radius_l)), min(att_info[1], x + radius_r)]
+    elif not dtype:
+        return x
+    else:
+        print("attribute type unidentified!")
+
+
 class Classifier:
     def __init__(self):
         self.specified_atts = []
@@ -18,6 +30,7 @@ class Classifier:
         self.numerosity = 1
         self.match_count = 0
         self.loss = 0.0
+        # self.fscore = 0.0
         self.label_based = {}
         self.fitness = INIT_FITNESS
         self.ave_matchset_size = 0
@@ -34,20 +47,9 @@ class Classifier:
             for ref, x in enumerate(state):
                 if random_func.random() < (1 - PROB_HASH):
                     self.specified_atts.append(ref)
-                    self.condition.append(self.build_match(x, attribute_info[ref], dtypes[ref], random_func))
+                    self.condition.append(build_match(x, attribute_info[ref], dtypes[ref], random_func))
                     og = False
-        self.label_based = {k: 0 for k in self.prediction}
-
-    def build_match(self, x, att_info, dtype, random_func):
-        if dtype:
-            att_range = att_info[1] - att_info[0]
-            radius_l = random_func.randint(25, 75) * 0.01 * (att_range / 2.0)
-            radius_r = random_func.randint(25, 75) * 0.01 * (att_range / 2.0)
-            return [max(att_info[0], (x - radius_l)), min(att_info[1], x + radius_r)]
-        elif not dtype:
-            return x
-        else:
-            print("attribute type unidentified!")
+        self.label_based = {k: 0.0 for k in self.prediction}
 
     def classifier_copy(self, classifier_old, it):
         self.specified_atts = deepcopy(classifier_old.specified_atts)
@@ -59,19 +61,19 @@ class Classifier:
         self.ga_time = it
         self.fitness = classifier_old.fitness
         self.loss = classifier_old.loss
-        self.label_based = {k: 0 for k in self.prediction}
+        self.label_based = {k: 0.0 for k in self.prediction}
 
     def classifier_reboot(self, classifier_info, dtypes):
         classifier_info = classifier_info.to_list()
         condition = classifier_info[:NO_FEATURES]
 
-        def update_cond(ref, att_val):
-            if dtypes[ref] == 1:
-                self.specified_atts.append(ref)
-                self.condition.append([float(x) for x in att_val.split(";")])
+        def update_cond(ref0, att_val0):
+            if dtypes[ref0] == 1:
+                self.specified_atts.append(ref0)
+                self.condition.append([float(x) for x in att_val0.split(";")])
             else:
-                self.specified_atts.append(ref)
-                self.condition.append(int(att_val))
+                self.specified_atts.append(ref0)
+                self.condition.append(int(att_val0))
 
         for ref, att_val in enumerate(condition):
             if att_val == '#' or att_val == ' #':
@@ -81,9 +83,11 @@ class Classifier:
 
         self.prediction = set(int(n) for n in classifier_info[NO_FEATURES].split(";"))
         label_precisions = classifier_info[NO_FEATURES + 1]
-        self.label_based = {int(kv.split(":")[0]): float(kv.split(":")[1]) for kv in label_precisions.split(";")}
-        self.fitness, self.loss, self.numerosity, self.match_count, self.ave_matchset_size, \
-        self.init_time, self.ga_time = classifier_info[NO_FEATURES + 2:]
+        self.label_based = {int(kv.split("%")[0]): float(kv.split("%")[1]) for kv in label_precisions.split(";")}
+        self.fitness, self.loss, self.numerosity, self.match_count, self.ave_matchset_size, self.init_time, \
+            self.ga_time = classifier_info[NO_FEATURES + 2:]
+
+        # TODO parent prediction to be added
 
     def update_numerosity(self, num):
         self.numerosity += num
@@ -102,23 +106,25 @@ class Classifier:
             self.ave_matchset_size += BETA * (m_size - self.ave_matchset_size)
 
         # update_loss(target)
-        self.loss += (self.prediction.symmetric_difference(target).__len__() / (float(NO_LABELS)))
-        self.loss /= float(self.match_count)
+        if not self.prediction.issubset(target):
+            self.loss += (self.prediction.symmetric_difference(target).__len__() /
+                          (float(self.prediction.__len__() + target.__len__())))
 
-        # update label_based(target)
-        for l in self.prediction.intersection(target):
-            self.label_based[l] += 1
+        # update f-score(target)
+        # self.fscore += (2 * self.prediction.intersection(target).__len__() /
+        #                 (self.prediction.__len__() + target.__len__()))
 
         # update_fitness()
-        # label_accuracies = sum([acc / self.match_count for acc in self.label_based.values()]) \
-        #                    / float(self.prediction.__len__())
-        # self.fitness = max((label_accuracies ** NU), INIT_FITNESS)
-        # self.fitness = max((1 - self.loss)**NU, INIT_FITNESS)
-        self.fitness = max((2 * self.prediction.intersection(target).__len__()
-                            / (self.prediction.__len__() + target.__len__())) ** NU, INIT_FITNESS)
+        self.fitness = max((1 - self.loss / self.match_count) ** NU, INIT_FITNESS)
+        # self.fitness = max(((accuracy_sum + self.fscore/self.match_count) / 2) ** NU, INIT_FITNESS)
 
     def set_fitness(self, fitness):
         self.fitness = fitness
+
+    def estimate_label_based(self, target_labels):
+        for k in self.prediction:
+            count = [1 for labels in target_labels if k in labels]
+            self.label_based[k] = sum(count)/target_labels.__len__()
 
 
 if __name__ == "__main__":

@@ -6,9 +6,85 @@
 # ------------------------------------------------------------------------------
 import operator
 from sklearn.metrics import roc_curve, auc
-import numpy as np
+from numpy import zeros, isnan
 
 from config import *
+
+
+def exact_match(prediction, target):
+    if prediction == target:
+        return 1
+    else:
+        return 0
+
+
+def precision(prediction, target):
+    try:
+        return prediction.intersection(target).__len__() / target.__len__()
+    except ZeroDivisionError:
+        return 0.0
+
+
+def recall(prediction, target):
+    try:
+        return prediction.intersection(target).__len__() / prediction.__len__()
+    except ZeroDivisionError:
+        return 0.0
+
+
+def accuracy(prediction, target):
+    try:
+        return prediction.intersection(target).__len__()/prediction.union(target).__len__()
+    except ZeroDivisionError:
+        return 0.0
+
+
+def fscore(prediction, target):
+    try:
+        return 2 * prediction.intersection(target).__len__()\
+                              / (prediction.__len__() + target.__len__())
+    except ZeroDivisionError:
+        return 0.0
+
+
+def hamming_loss(prediction, target):
+    return prediction.symmetric_difference(target).__len__() / NO_LABELS
+
+
+def rank_loss(vote, target):
+    if not vote:
+        return 1.0
+
+    target_complement = set(range(0, NO_LABELS)).difference(target)
+    loss = 0
+    for tc in target_complement:
+        for t in target:
+            if vote.get(t, 0) < vote.get(tc, -1e-5):
+                loss += 1
+    try:
+        return loss / (target.__len__() * target_complement.__len__())
+    except ZeroDivisionError:
+        return 0.0
+
+
+def one_error(vote, target):
+    try:
+        labels_max_vote = {max(vote.items(), key=operator.itemgetter(1))[0]}
+    except ValueError:
+        labels_max_vote = set()
+    if labels_max_vote.intersection(target).__len__() > 0:
+        return 0
+    else:
+        return 1.0
+
+
+def coverage(vote, target):
+    ranking = {k: v for k, v in sorted(vote.items(), key=lambda item: item[1], reverse=True)}
+    prediction_ranks = list(ranking.values())
+    target_ranks = {}
+    for l in target:
+        target_ranks[l] = prediction_ranks.index(ranking.get(l, ))
+    print(2)
 
 
 class Performance:
@@ -30,90 +106,21 @@ class Performance:
         self.macro_fscore = 0.0
         self.roc_auc = 0.0
 
-    def exact_match(self, prediction, target):
-        if prediction == target:
-            return 1
-        else:
-            return 0
-
-    def precision(self, prediction, target):
-        try:
-            return prediction.intersection(target).__len__()/target.__len__()
-        except ZeroDivisionError:
-            return 0.0
-
-    def recall(self, prediction, target):
-        try:
-            return prediction.intersection(target).__len__()/prediction.__len__()
-        except ZeroDivisionError:
-            return 0.0
-
-    def accuracy(self, prediction, target):
-        try:
-            return prediction.intersection(target).__len__()/prediction.union(target).__len__()
-        except ZeroDivisionError:
-            return 0.0
-
-    def fscore(self, prediction, target):
-        try:
-            return 2 * prediction.intersection(target).__len__()\
-                                  / (prediction.__len__() + target.__len__())
-        except ZeroDivisionError:
-            return 0.0
-
-    def hamming_loss(self, prediction, target):
-        return prediction.symmetric_difference(target).__len__() / NO_LABELS
-
-    def rank_loss(self, vote, target):
-        if not vote:
-            return 1.0
-
-        target_complement = set(range(0, NO_LABELS)).difference(target)
-        loss = 0
-        for tc in target_complement:
-            for t in target:
-                if vote.get(t, 0) < vote.get(tc, -1e-5):
-                    loss += 1
-        try:
-            return loss / (target.__len__() * target_complement.__len__())
-        except ZeroDivisionError:
-            return 0.0
-
-    def one_error(self, vote, target):
-        try:
-            labels_max_vote = {max(vote.items(), key=operator.itemgetter(1))[0]}
-        except ValueError:
-            labels_max_vote = set()
-        if labels_max_vote.intersection(target).__len__() > 0:
-            return 0
-        else:
-            return 1.0
-
-    def coverage(self, vote, target):
-        ranking = {k: v for k, v in sorted(vote.items(), key=lambda item: item[1], reverse=True)}
-        prediction_ranks = list(ranking.values())
-        target_ranks = {}
-        for l in target:
-            target_ranks[l] = prediction_ranks.index(ranking.get(l, ))
-
-        print(2)
-
     def update_example_based(self, vote, prediction, target):
-        self.exact_match_example += self.exact_match(prediction, target)
-        self.hamming_loss_example += self.hamming_loss(prediction, target)
-        self.precision_example += self.precision(prediction, target)
-        self.recall_example += self.recall(prediction, target)
-        self.fscore_example += self.fscore(prediction, target)
-        self.accuracy_example += self.accuracy(prediction, target)
+        self.exact_match_example += exact_match(prediction, target)
+        self.hamming_loss_example += hamming_loss(prediction, target)
+        self.precision_example += precision(prediction, target)
+        self.recall_example += recall(prediction, target)
+        self.fscore_example += fscore(prediction, target)
+        self.accuracy_example += accuracy(prediction, target)
         if PREDICTION_METHOD == 2:
-            self.one_error_example += self.one_error(vote, target)
-            self.rank_loss_example += self.rank_loss(vote, target)
+            self.one_error_example += one_error(vote, target)
+            self.rank_loss_example += rank_loss(vote, target)
             # self.coverage(vote, target)
 
     def update_class_based(self, prediction, target):
         tp = target.intersection(prediction)
         fp = prediction.difference(target.intersection(prediction))
-        tn = set(range(0, NO_LABELS)).difference(target).difference(prediction)
         fn = target.difference(target.intersection(prediction))
 
         def update_single(label, where):
@@ -122,7 +129,6 @@ class Performance:
             self.class_based_measure[label] = class_dict
         [update_single(label, 'TP') for label in tp]
         [update_single(label, 'FP') for label in fp]
-        [update_single(label, 'TN') for label in tn]
         [update_single(label, 'FN') for label in fn]
 
     def micro_average(self):
@@ -141,22 +147,29 @@ class Performance:
             / (self.micro_precision + self.micro_recall + 1e-3)
 
     def macro_average(self):
-        self.macro_precision = sum([class_dict['TP'] / (class_dict['TP'] + class_dict['FP'] + 1) for
+        self.macro_precision = sum([class_dict['TP'] / (class_dict['TP'] + class_dict['FP'] + 1e-3) for
                                     class_dict in self.class_based_measure]) / NO_LABELS
-        self.macro_recall = sum([class_dict['TP'] / (class_dict['TP'] + class_dict['FN'] + 1) for
+        self.macro_recall = sum([class_dict['TP'] / (class_dict['TP'] + class_dict['FN'] + 1e-3) for
                                 class_dict in self.class_based_measure]) / NO_LABELS
         self.macro_fscore = 2 * (self.macro_precision * self.macro_recall) \
             / (self.macro_precision + self.macro_recall + 1e-3)
 
-    def roc(self, vote_list, target_list):
+    def roc(self, votes, targets):
+        vote_list = zeros((votes.__len__(), NO_LABELS))
+        target_list = zeros((votes.__len__(), NO_LABELS))
+        idx = 0
+        for vote, target in zip(votes, targets):
+            for k, v in vote.items():
+                vote_list[idx][k] = v
+            for t in target:
+                target_list[idx][t] = 1
+            idx += 1
+
         roc_auc = []
-        fpr = dict()
-        tpr = dict()
-        for l in range(2):
-            fpr[l], tpr[l], _ = roc_curve(target_list[:, l], vote_list[:, l])
-            roc_auc[l] = auc(fpr[l], tpr[l])
-        where_are_NaNs = np.isnan(roc_auc)
-        roc_auc[where_are_NaNs] = 0.0
+        for l in range(NO_LABELS):
+            fpr, tpr, _ = roc_curve(target_list[:, l], vote_list[:, l])
+            roc_auc.append(auc(fpr, tpr))
+        roc_auc = [0 if isnan(val) else val for val in roc_auc]
         self.roc_auc = sum(roc_auc) / NO_LABELS
 
     def get_report(self, sample_count):
@@ -175,7 +188,7 @@ class Performance:
         multi_label_perf['macro-re'] = self.macro_recall
         multi_label_perf['1e'] = self.one_error_example / sample_count
         multi_label_perf['rl'] = self.rank_loss_example / sample_count
-        multi_label_perf['auc'] = self.roc_auc
+        multi_label_perf['roc-auc'] = self.roc_auc
         return multi_label_perf
 
 # extended hamming loss
