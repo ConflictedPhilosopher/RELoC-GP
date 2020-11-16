@@ -8,7 +8,6 @@
 import os.path
 import random
 
-from config import *
 from classifier_set import ClassifierSets
 from prediction import *
 from timer import Timer
@@ -194,10 +193,6 @@ class REGLoGP:
             if not self.population.matchset:
                 self.no_match += 1
             else:
-                print('target ', sample[1])
-                for ref in self.population.matchset:
-                    print(self.population.popset[ref].label_based)
-
                 if PREDICTION_METHOD == 1:
                     # TODO max prediction not consistent with the remainder
                     label_prediction = max_prediction([self.population.popset[ref] for ref in
