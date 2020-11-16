@@ -17,7 +17,7 @@ GET_MLD_PROP = True
 REBOOT_MODEL = 0
 MAX_ITERATION = 5000
 MAX_CLASSIFIER = 3000
-PROB_HASH = 0.85
+PROB_HASH = 0.9
 TRACK_FREQ = 1000
 AVG_COUNT = 10
 
@@ -45,6 +45,6 @@ DO_SUBSUMPTION = False
 
 # GA parameters
 SELECTION = 't'   # 'r': roulette wheel selection - 't': tournament selection
-P_XOVER = 0.0
+P_XOVER = 0.8
 P_MUT = 0.01
-THETA_GA = 5000
+THETA_GA = 10000
