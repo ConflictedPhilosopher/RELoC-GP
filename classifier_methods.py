@@ -79,7 +79,10 @@ class ClassifierMethods:
         classifier_string += (prediction_string + ",")
         label_precision = ";".join([str(label) + '%' + str(round(pr, 3)) for label, pr in classifier.label_based.items()])
         classifier_string += (label_precision + ",")
-        loss = float(classifier.loss/classifier.match_count)
+        try:
+            loss = float(classifier.loss/classifier.match_count)
+        except ZeroDivisionError:
+            loss = 0.0
         parameter_string = str("%.4f" % classifier.fitness) + "," + \
             str("%.4f" % loss) + "," + \
             str("%d" % classifier.numerosity) + "," + \
