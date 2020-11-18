@@ -5,7 +5,7 @@
 #
 # ------------------------------------------------------------------------------
 
-import os.path
+from os.path import join, curdir
 import random
 
 from classifier_set import ClassifierSets
@@ -40,14 +40,15 @@ class REGLoGP:
                                              cosine_matrix=self.data.sim_matrix, popset=pop)
             self.population.micro_pop_size = sum([classifier.numerosity for classifier in pop])
             self.population.pop_average_eval()
+            analyze(pop, data)
         else:
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
-                                             sim_mode='global', sim_delta=0.3, clustering_method=None,
+                                             sim_mode='global', sim_delta=0.9, clustering_method=None,
                                              cosine_matrix=self.data.sim_matrix)
 
         self.iteration = 1
         try:
-            track_file = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "tracking_" + str(self.exp) + ".csv")
+            track_file = join(curdir, REPORT_PATH, DATA_HEADER, "tracking_" + str(self.exp) + ".csv")
             self.training_track = open(track_file, 'w')
         except Exception as exc:
             print(exc)
@@ -203,15 +204,14 @@ class REGLoGP:
                 if DEMO:
                     self.population.build_sim_graph([self.population.popset[idx] for idx in self.population.matchset])
                     cluster_dict = {0: self.population.predicted_labels}
-                    plot_image(sample[2], sample[1], vote, self.data.label_ref)
+                    plot_image(sample[2], sample[1], vote0, self.data.label_ref)
                     plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
 
-                    print('target', [self.data.label_ref[label] for label in sample[1]])
                     for idx in self.population.matchset:
                         if self.population.popset[idx].match_count > 0:
                             print('Classifier acc:')
                             for k, v in self.population.popset[idx].label_based.items():
-                                print(self.data.label_ref[k], round(v / self.population.popset[idx].match_count, 3))
+                                print(self.data.label_ref[k], round(v, 3))
 
             vote_list.append(vote0)
             self.population.clear_sets()
