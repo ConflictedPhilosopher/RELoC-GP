@@ -8,10 +8,10 @@
 SEED_NUMBER = 10
 
 DATA_DIR = "D:\Datasets"
-DATA_HEADER = "mit-csail"
+DATA_HEADER = "pascal-voc6"
 REPORT_PATH = "report"
 NO_FEATURES = 256
-NO_LABELS = 51
+NO_LABELS = 10
 GET_MLD_PROP = True
 
 REBOOT_MODEL = 0
