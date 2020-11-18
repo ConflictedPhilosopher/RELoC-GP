@@ -4,7 +4,7 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
-import os.path
+from os.path import join, curdir
 
 import pandas as pd
 
@@ -19,7 +19,7 @@ class RebootModel():
 
     def get_model(self):
         try:
-            file_name = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "model_" + str(self.exp) + ".csv")
+            file_name = join(curdir, REPORT_PATH, DATA_HEADER, "model_" + str(self.exp) + ".csv")
             model = pd.read_csv(file_name)
         except FileNotFoundError as inst:
             print(type(inst))

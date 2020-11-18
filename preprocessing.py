@@ -4,11 +4,11 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
-import os.path
+from os.path import join
 from math import sqrt
 
 import pandas as pd
-import numpy as np
+from numpy import array
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.model_selection import train_test_split
@@ -41,10 +41,10 @@ class Preprocessing:
         self.default_split = 0.7
 
     def main(self, train_test, cv, complete):
-        data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + ".csv")
-        train_data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_train.csv")
-        test_data_path = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_test.csv")
-        fold_path = [os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_fold_" + str(i + 1) + ".csv") for i in
+        data_path = join(DATA_DIR, DATA_HEADER, DATA_HEADER + ".csv")
+        train_data_path = join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_train.csv")
+        test_data_path = join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_test.csv")
+        fold_path = [join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_fold_" + str(i + 1) + ".csv") for i in
                      range(5)]
 
         if train_test:
@@ -117,7 +117,7 @@ class Preprocessing:
         self.label_count = NO_LABELS
         self.label_ref = {k: v for k, v in enumerate(data_complete.columns[NO_FEATURES:-1])}
         label_matrix = data_complete.iloc[:, NO_FEATURES:-1]
-        label_matrix_sparse = sparse.csr_matrix(np.array(label_matrix).transpose())
+        label_matrix_sparse = sparse.csr_matrix(array(label_matrix).transpose())
         self.sim_matrix = cosine_similarity(label_matrix_sparse)
 
     # ِ multi-label properties
@@ -204,10 +204,10 @@ class Preprocessing:
 
 
 if __name__ == "__main__":
-    data_path0 = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + ".csv")
-    train_data_path0 = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_train.csv")
-    test_data_path0 = os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_test.csv")
-    fold_path0 = [os.path.join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_fold_" + str(i + 1) + ".csv") for i in range(5)]
+    data_path0 = join(DATA_DIR, DATA_HEADER, DATA_HEADER + ".csv")
+    train_data_path0 = join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_train.csv")
+    test_data_path0 = join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_test.csv")
+    fold_path0 = [join(DATA_DIR, DATA_HEADER, DATA_HEADER + "_fold_" + str(i + 1) + ".csv") for i in range(5)]
 
     preprocessing = Preprocessing()
     preprocessing.main(0, 0, 1)

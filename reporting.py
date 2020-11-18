@@ -4,7 +4,7 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
-import os.path
+from os.path import join, curdir
 from config import *
 
 from classifier_methods import ClassifierMethods
@@ -16,7 +16,7 @@ class Reporting():
 
     def write_model_stats(self, pop, timer, train_eval, train_coverage, test_eval, test_coverage):
         try:
-            file_name = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "stats_" + str(self.exp) + ".txt")
+            file_name = join(curdir, REPORT_PATH, DATA_HEADER, "stats_" + str(self.exp) + ".txt")
             stat_file = open(file_name, 'w')
         except Exception as inst:
             print(type(inst))
@@ -49,7 +49,7 @@ class Reporting():
 
     def write_pop(self, pop, dtypes):
         try:
-            file_name = os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, "model_" + str(self.exp) + ".csv")
+            file_name = join(curdir, REPORT_PATH, DATA_HEADER, "model_" + str(self.exp) + ".csv")
             model_file = open(file_name, 'w')
         except Exception as inst:
             print(type(inst))

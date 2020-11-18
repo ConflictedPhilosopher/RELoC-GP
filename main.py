@@ -4,7 +4,8 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
-import os.path
+from os.path import join
+from os import makedirs
 from joblib import Parallel, delayed
 import random
 import time
@@ -25,8 +26,8 @@ def handle_model(args):
 
 def run_parallel(olo, cv, cmplt):
     random.seed(SEED_NUMBER)
-    os.makedirs(REPORT_PATH, exist_ok=True)
-    os.makedirs(os.path.join(REPORT_PATH, DATA_HEADER), exist_ok=True)
+    makedirs(REPORT_PATH, exist_ok=True)
+    makedirs(join(REPORT_PATH, DATA_HEADER), exist_ok=True)
 
     data = Preprocessing()
     data.main(olo, cv, cmplt)
