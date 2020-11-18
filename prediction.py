@@ -63,8 +63,8 @@ def aggregate_prediction(matching_cls):
     [update_value(cl) for cl in matching_cls]
     try:
         max_vote = max(vote.values())
-        # vote = {k: v / numerosity[k] for k, v in vote.items()}
-        vote = {k: v / max_vote for k, v in vote.items()}
+        vote = {k: v / numerosity[k] for k, v in vote.items()}
+        # vote = {k: v / max_vote for k, v in vote.items()}
         return vote
     except (ZeroDivisionError, ValueError):
         pass
@@ -102,7 +102,7 @@ def optimize_theta(votes, targets):
 
 def one_threshold(vote, theta=None):
     if not theta:
-        theta = [0.5] * NO_LABELS
+        theta = [THETA] * NO_LABELS
     prediction = set()
     [prediction.add(label) for label in vote.keys() if vote[label] >= theta[label]]
     return prediction
