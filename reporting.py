@@ -60,7 +60,7 @@ class Reporting():
 
         method = ClassifierMethods(dtypes)
         header = ",".join(['f'+str(i) for i in range(NO_FEATURES)])
-        header += ", prediction, label_precision, fitness, hloss, numerosity, match_count, " \
+        header += ", specificity, prediction, label_precision, fitness, hloss, numerosity, match_count, " \
                   "avg_match_set, init_time, ga_time \n"
         model_file.write(header)
         [model_file.write(method.classifier_print(cl)) for cl in pop]
