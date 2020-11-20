@@ -177,6 +177,7 @@ class KnnPosterior:
         y_hat = []
         for cl in self.pop:
             y_hat.append([1 if label in cl.prediction else 0 for label in range(self._num_labels)])
+
         self._label_hat_cache = get_matrix_in_format(np.array(y_hat), 'lil')
         # Computing the prior probabilities
         self._prior_prob_true, self._prior_prob_false = self._compute_prior(self._label_cache)
@@ -186,7 +187,6 @@ class KnnPosterior:
 
     def predict(self, X_test):
         """Predict labels for X
-
         Parameters
         ----------
         X : numpy.ndarray or scipy.sparse.csc_matrix
@@ -198,17 +198,15 @@ class KnnPosterior:
             binary indicator matrix with label assignments with shape
             :code:`(n_samples, n_labels)`
         """
+        result = sparse.lil_matrix((X_test.shape[0], self._num_labels), dtype='i8')
+        for instance in range(X_test.shape[0]):
+            neighbors = self.nearest_neighbor(X_test[instance])
+            deltas = self._label_hat_cache[neighbors, ].sum(axis=0)
 
-        # result = sparse.lil_matrix((X_test.shape[0], self._num_labels), dtype='i8')
-        result = np.zeros(shape=(self._num_labels), dtype='float')
-        neighbors = self.nearest_neighbor(X_test)
-        # for instance in range(X_test.shape[0]):
-        deltas = self._label_hat_cache[neighbors, ].sum(axis=0)
-
-        for label in range(self._num_labels):
-            p_true = self._prior_prob_true[label] * self._cond_prob_true[label, deltas[0, label]]
-            p_false = self._prior_prob_false[label] * self._cond_prob_false[label, deltas[0, label]]
-            result[label] = int(p_true >= p_false)
+            for label in range(self._num_labels):
+                p_true = self._prior_prob_true[label] * self._cond_prob_true[label, deltas[0, label]]
+                p_false = self._prior_prob_false[label] * self._cond_prob_false[label, deltas[0, label]]
+                result[instance, label] = int(p_true >= p_false)
         return result
 
     def predict_prob(self, X_test):
@@ -225,13 +223,13 @@ class KnnPosterior:
             binary indicator matrix with label assignment probabilities
             with shape :code:`(n_samples, n_labels)`
         """
+        result = sparse.lil_matrix((X_test.shape[0], self._num_labels), dtype='float')
+        for instance in range(X_test.shape[0]):
+            neighbors = self.nearest_neighbor(X_test[instance])
+            deltas = self._label_hat_cache[neighbors, ].sum(axis=0)
 
-        result = np.zeros(shape=(self._num_labels), dtype='float')
-        neighbors = self.nearest_neighbor(X_test)
-        # for instance in range(X_test.shape[0]):
-        deltas = self._label_hat_cache[neighbors,].sum(axis=0)
+            for label in range(self._num_labels):
+                p_true = self._prior_prob_true[label] * self._cond_prob_true[label, deltas[0, label]]
+                result[instance, label] = p_true
 
-        for label in range(self._num_labels):
-            p_true = self._prior_prob_true[label] * self._cond_prob_true[label, deltas[0, label]]
-            result[label] = p_true
         return result
