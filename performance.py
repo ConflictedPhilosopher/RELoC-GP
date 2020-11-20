@@ -155,19 +155,9 @@ class Performance:
             / (self.macro_precision + self.macro_recall + 1e-3)
 
     def roc(self, votes, targets):
-        vote_list = zeros((votes.__len__(), NO_LABELS))
-        target_list = zeros((votes.__len__(), NO_LABELS))
-        idx = 0
-        for vote, target in zip(votes, targets):
-            for k, v in vote.items():
-                vote_list[idx][k] = v
-            for t in target:
-                target_list[idx][t] = 1
-            idx += 1
-
         roc_auc = []
         for l in range(NO_LABELS):
-            fpr, tpr, _ = roc_curve(target_list[:, l], vote_list[:, l])
+            fpr, tpr, _ = roc_curve(targets[:, l].toarray(), votes[:, l].toarray())
             roc_auc.append(auc(fpr, tpr))
         roc_auc = [0 if isnan(val) else val for val in roc_auc]
         self.roc_auc = sum(roc_auc) / NO_LABELS
