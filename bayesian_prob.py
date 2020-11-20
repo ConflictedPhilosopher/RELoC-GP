@@ -124,7 +124,7 @@ class KnnPosterior:
         label_hat_info = get_matrix_in_format(y_hat, 'dok')
 
         # contains indices of the neighbor classifiers per instance
-        neighbors = self.nearest_neighbor(X)
+        neighbors = [self.nearest_neighbor(x) for x in X]
 
         for instance in range(self._num_instances):
             deltas = label_hat_info[neighbors[instance], :].sum(axis=0)
@@ -147,16 +147,13 @@ class KnnPosterior:
                         self.s * (self.k + 1) + cn_sum[label, 0])
         return cond_prob_true, cond_prob_false
 
-    def nearest_neighbor(self, X):
-        neighbors = []
-        for x in X:
-            matchset = [ind for (ind, classifier) in enumerate(self.pop) if
-                        match(classifier, x, self.dtypes)]
-            d = [distance(self.pop[idx], x) for idx in matchset]
-            d_sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
-            knn_matchset = [matchset[idx] for idx in d_sorted_index[:self.k]]
-            neighbors.append(sorted(knn_matchset))
-        return neighbors
+    def nearest_neighbor(self, x):
+        matchset = [ind for (ind, classifier) in enumerate(self.pop) if
+                    match(classifier, x, self.dtypes)]
+        d = [distance(self.pop[idx], x) for idx in matchset]
+        d_sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
+        knn_matchset = [matchset[idx] for idx in d_sorted_index[:self.k]]
+        return sorted(knn_matchset)
 
     def fit(self, X, y):
         """Fit classifier with training data
@@ -174,11 +171,13 @@ class KnnPosterior:
         self
             fitted instance of self
         """
-        y_hat = []
-        self._label_hat_cache = get_matrix_in_format(y_hat, 'lil')
         self._label_cache = get_matrix_in_format(y, 'lil')
         self._num_instances = self._label_cache.shape[0]
         self._num_labels = self._label_cache.shape[1]
+        y_hat = []
+        for cl in self.pop:
+            y_hat.append([1 if label in cl.prediction else 0 for label in range(self._num_labels)])
+        self._label_hat_cache = get_matrix_in_format(np.array(y_hat), 'lil')
         # Computing the prior probabilities
         self._prior_prob_true, self._prior_prob_false = self._compute_prior(self._label_cache)
         # Computing the posterior probabilities
@@ -200,16 +199,16 @@ class KnnPosterior:
             :code:`(n_samples, n_labels)`
         """
 
-        result = sparse.lil_matrix((X_test.shape[0], self._num_labels), dtype='i8')
+        # result = sparse.lil_matrix((X_test.shape[0], self._num_labels), dtype='i8')
+        result = np.zeros(shape=(self._num_labels), dtype='float')
         neighbors = self.nearest_neighbor(X_test)
-        for instance in range(X_test.shape[0]):
-            deltas = self._label_hat_cache[neighbors[instance],].sum(axis=0)
+        # for instance in range(X_test.shape[0]):
+        deltas = self._label_hat_cache[neighbors, ].sum(axis=0)
 
-            for label in range(self._num_labels):
-                p_true = self._prior_prob_true[label] * self._cond_prob_true[label, deltas[0, label]]
-                p_false = self._prior_prob_false[label] * self._cond_prob_false[label, deltas[0, label]]
-                result[instance, label] = int(p_true >= p_false)
-
+        for label in range(self._num_labels):
+            p_true = self._prior_prob_true[label] * self._cond_prob_true[label, deltas[0, label]]
+            p_false = self._prior_prob_false[label] * self._cond_prob_false[label, deltas[0, label]]
+            result[label] = int(p_true >= p_false)
         return result
 
     def predict_prob(self, X_test):
@@ -227,12 +226,12 @@ class KnnPosterior:
             with shape :code:`(n_samples, n_labels)`
         """
 
-        result = sparse.lil_matrix((X_test.shape[0], self._num_labels), dtype='float')
+        result = np.zeros(shape=(self._num_labels), dtype='float')
         neighbors = self.nearest_neighbor(X_test)
-        for instance in range(X_test.shape[0]):
-            deltas = self._label_hat_cache[neighbors[instance],].sum(axis=0)
+        # for instance in range(X_test.shape[0]):
+        deltas = self._label_hat_cache[neighbors,].sum(axis=0)
 
-            for label in range(self._num_labels):
-                p_true = self._prior_prob_true[label] * self._cond_prob_true[label, deltas[0, label]]
-                result[instance, label] = p_true
+        for label in range(self._num_labels):
+            p_true = self._prior_prob_true[label] * self._cond_prob_true[label, deltas[0, label]]
+            result[label] = p_true
         return result
