@@ -72,20 +72,11 @@ def aggregate_prediction(matching_cls):
 
 def optimize_theta(votes, targets):
     theta = []
-    vote_list = zeros((votes.__len__(), NO_LABELS))
-    target_list = zeros((votes.__len__(), NO_LABELS))
-    idx = 0
-    for vote, target in zip(votes, targets):
-        for k, v in vote.items():
-            vote_list[idx][k] = v
-        for t in target:
-            target_list[idx][t] = 1
-        idx += 1
     for l in range(NO_LABELS):
-        if sum(target_list[:, l]) == 0:
+        if targets[:, l].nnz == 0:
             theta.append(1.0)
         else:
-            precision, recall, thresholds = precision_recall_curve(target_list[:, l], vote_list[:, l])
+            precision, recall, thresholds = precision_recall_curve(targets[:, l].toarray(), votes[:, l].toarray())
             fscore = nan_to_num((2 * precision * recall) / (precision + recall))
             theta.append(thresholds[argmax(fscore)])
         # fpr, tpr, thresholds = roc_curve(target_list[:, l], vote_list[:, l])
