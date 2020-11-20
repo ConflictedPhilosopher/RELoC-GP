@@ -8,6 +8,9 @@
 from os.path import join, curdir
 import random
 
+from numpy import array
+import scipy.sparse as sparse
+
 from classifier_set import ClassifierSets
 from prediction import *
 from timer import Timer
@@ -16,6 +19,7 @@ from reporting import Reporting
 from reboot_model import RebootModel
 from visualization import plot_image, plot_graph
 from analyze_model import analyze
+from bayesian_prob import KnnPosterior
 
 
 class REGLoGP:
@@ -124,19 +128,15 @@ class REGLoGP:
 
         self.timer.start_evaluation()
         self.population.pop_average_eval()
-        self.population.estimate_label_pr(samples_training)
-        [test_evaluation, test_class_precision, test_coverage] = self.evaluation()
-        [train_evaluation, _, train_coverage] = self.evaluation(False)
+        # self.population.estimate_label_pr(samples_training)
+        [test_evaluation, test_class_precision, test_coverage] = self.evaluation(samples_test)
+        [train_evaluation, _, train_coverage] = self.evaluation(samples_training)
         self.timer.stop_evaluation()
 
         reporting = Reporting(self.exp)
         reporting.write_pop(self.population.popset, self.data.dtypes)
         reporting.write_model_stats(self.population, self.timer, train_evaluation, train_coverage,
                                     test_evaluation, test_coverage)
-        global_time = self.timer.get_global_timer()
-
-        print("Process Time (min): ", round(global_time, 5))
-
         return [test_evaluation, test_class_precision, self.track_to_plot]
 
     def train_iteration(self, sample):
@@ -166,21 +166,21 @@ class REGLoGP:
         self.timer.stop_deletion()
         self.population.clear_sets()
 
-    def evaluation(self, test=True):
+    def evaluation(self, samples):
+        """ Evaluate the trained model
+
+        :param samples: list of instances to test the model
+        :return:
+        dict
+            multi-label performance metrics
+        dict
+            class-specific prediction precision
+        float
+            ration of the covered samples by the rules
+        """
         performance = Performance()
-        vote_list = []
         self.no_match = 0
 
-        if test:
-            if self.data.data_valid_folds:
-                samples = self.data.data_valid_folds[self.exp]
-            else:
-                samples = self.data.data_test_list
-        else:
-            if self.data.data_train_folds:
-                samples = self.data.data_train_folds[self.exp]
-            else:
-                samples = self.data.data_train_list
         if THRESHOLD == 1:
             bi_partition = one_threshold
         elif THRESHOLD == 2:
@@ -188,46 +188,23 @@ class REGLoGP:
         else:
             raise Exception("prediction threshold method unidentified!")
 
-        def get_prediction_prob(sample):
-            self.population.make_eval_matchset(sample[0])
-            vote0 = {}
-            if not self.population.matchset:
-                self.no_match += 1
-            else:
-                if PREDICTION_METHOD == 1:
-                    # TODO max prediction not consistent with the remainder
-                    label_prediction = max_prediction([self.population.popset[ref] for ref in
-                                                       self.population.matchset], random.randint)
-                else:
-                    vote0 = aggregate_prediction([self.population.popset[ref] for ref
-                                                  in self.population.matchset])
-                if DEMO:
-                    self.population.build_sim_graph([self.population.popset[idx] for idx in self.population.matchset])
-                    cluster_dict = {0: self.population.predicted_labels}
-                    plot_image(sample[2], sample[1], vote0, self.data.label_ref)
-                    plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
+        X = array([sample[0] for sample in samples])
+        y = sparse.lil_matrix((X.shape[0], NO_LABELS), dtype='i8')
+        for idx in range(X.shape[0]):
+            y[idx] = [1 if l in samples[idx][1] else 0 for l in range(NO_LABELS)]
+        bayes = KnnPosterior(self.population.popset, self.data.dtypes)
+        bayes.fit(X, y)
+        probabilities = bayes.predict_prob(X)
+        theta = optimize_theta(probabilities, y)
 
-                    for idx in self.population.matchset:
-                        if self.population.popset[idx].match_count > 0:
-                            print('Classifier acc:')
-                            for k, v in self.population.popset[idx].label_based.items():
-                                print(self.data.label_ref[k], round(v, 3))
-
-            vote_list.append(vote0)
-            self.population.clear_sets()
-
-        [get_prediction_prob(sample) for sample in samples]
-        target_list = [sample[1] for sample in samples]
-        theta = optimize_theta(vote_list, target_list)
-
-        for t, vote in zip(target_list, vote_list):
-            prediction = bi_partition(vote, theta)
-            performance.update_example_based(vote, prediction, t)
-            performance.update_class_based(prediction, t)
+        for idx in range(probabilities.shape[0]):
+            prediction = set([l for l in range(NO_LABELS) if probabilities[idx][0, l] >= theta[l]])
+            # performance.update_example_based(vote, prediction, t)
+            performance.update_class_based(prediction, samples[idx][1])
 
         performance.micro_average()
         performance.macro_average()
-        performance.roc(vote_list, target_list)
+        performance.roc(probabilities, y)
         multi_label_perf = performance.get_report(samples.__len__())
 
         class_precision = {}
