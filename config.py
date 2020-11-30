@@ -7,7 +7,7 @@
 
 SEED_NUMBER = 10
 
-DATA_DIR = "D:\Datasets"
+DATA_DIR = "C:\Datasets"
 DATA_HEADER = "pascal-voc6"
 REPORT_PATH = "report"
 NO_FEATURES = 256
@@ -47,4 +47,4 @@ DO_SUBSUMPTION = False
 SELECTION = 't'   # 'r': roulette wheel selection - 't': tournament selection
 P_XOVER = 0.8
 P_MUT = 0.01
-THETA_GA = 10000
+THETA_GA = 100
