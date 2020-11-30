@@ -12,6 +12,7 @@ from skmultilearn.utils import get_matrix_in_format
 import numpy as np
 import scipy.sparse as sparse
 from sklearn.metrics.pairwise import cosine_similarity
+# from sklearn.neighbors import NearestNeighbors
 from math import sqrt
 
 
@@ -47,7 +48,7 @@ def match(classifier, state, dtypes):
     return True
 
 
-class KnnPosterior:
+class KnnPosterior(MLClassifierBase):
 
     def __init__(self, pop, dtypes, k=10, s=1.0, ignore_first_neighbours=0):
         """Initializes the classifier
@@ -116,6 +117,7 @@ class KnnPosterior:
             the posterior probability given false
         """
 
+        # self.knn_ = NearestNeighbors(self.k).fit(X)
         c = sparse.lil_matrix((self._num_labels, self.k + 1), dtype='i8')
         cn = sparse.lil_matrix((self._num_labels, self.k + 1), dtype='i8')
 
@@ -125,6 +127,7 @@ class KnnPosterior:
 
         # contains indices of the neighbor classifiers per instance
         neighbors = [self.nearest_neighbor(x) for x in X]
+        # neighbors = self.knn_.kneighbors(X, self.k, return_distance=False)
 
         for instance in range(self._num_instances):
             deltas = label_hat_info[neighbors[instance], :].sum(axis=0)
@@ -223,6 +226,7 @@ class KnnPosterior:
             binary indicator matrix with label assignment probabilities
             with shape :code:`(n_samples, n_labels)`
         """
+        # neighbors = self.knn_.kneighbors(X_test, self.k, return_distance=False)
         result = sparse.lil_matrix((X_test.shape[0], self._num_labels), dtype='float')
         for instance in range(X_test.shape[0]):
             neighbors = self.nearest_neighbor(X_test[instance])

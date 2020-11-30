@@ -132,6 +132,7 @@ class REGLoGP:
         [test_evaluation, test_class_precision, test_coverage] = self.evaluation(samples_test)
         [train_evaluation, _, train_coverage] = self.evaluation(samples_training)
         self.timer.stop_evaluation()
+        self.timer.get_global_timer()
 
         reporting = Reporting(self.exp)
         reporting.write_pop(self.population.popset, self.data.dtypes)

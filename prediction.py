@@ -79,7 +79,7 @@ def optimize_theta(votes, targets):
             precision, recall, thresholds = precision_recall_curve(targets[:, l].toarray(), votes[:, l].toarray())
             fscore = nan_to_num((2 * precision * recall) / (precision + recall))
             theta.append(thresholds[argmax(fscore)])
-        # fpr, tpr, thresholds = roc_curve(target_list[:, l], vote_list[:, l])
+        # fpr, tpr, thresholds = roc_curve(targets[:, l].toarray(), votes[:, l].toarray())
         # if all(isnan(tpr)):
         #     theta.append(1.0)
         # else:
