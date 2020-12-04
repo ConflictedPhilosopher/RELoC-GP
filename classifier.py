@@ -60,7 +60,6 @@ class Classifier:
         self.init_time = it
         self.ga_time = it
         self.fitness = classifier_old.fitness
-        self.loss = classifier_old.loss
         self.label_based = {k: 0.0 for k in self.prediction}
 
     def classifier_reboot(self, classifier_info, dtypes):
@@ -81,11 +80,11 @@ class Classifier:
             else:
                 update_cond(ref, att_val)
 
-        self.prediction = set(int(n) for n in classifier_info[NO_FEATURES].split(";"))
-        label_precisions = classifier_info[NO_FEATURES + 1]
+        self.prediction = set(int(n) for n in classifier_info[NO_FEATURES+1].split(";"))
+        label_precisions = classifier_info[NO_FEATURES + 2]
         self.label_based = {int(kv.split("%")[0]): float(kv.split("%")[1]) for kv in label_precisions.split(";")}
         self.fitness, self.loss, self.numerosity, self.match_count, self.ave_matchset_size, self.init_time, \
-            self.ga_time = classifier_info[NO_FEATURES + 2:]
+            self.ga_time = classifier_info[NO_FEATURES + 3:]
 
         # TODO parent prediction to be added
 
@@ -107,8 +106,7 @@ class Classifier:
 
         # update_loss(target)
         if not self.prediction.issubset(target):
-            self.loss += (self.prediction.symmetric_difference(target).__len__() /
-                          (float(self.prediction.__len__() + target.__len__())))
+            self.loss += (self.prediction.symmetric_difference(target).__len__() / NO_LABELS)
 
         # update f-score(target)
         # self.fscore += (2 * self.prediction.intersection(target).__len__() /
