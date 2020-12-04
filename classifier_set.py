@@ -48,13 +48,13 @@ def distance(classifier, state):
 
 
 def coverage(classifier, data, dtypes):
-    # TODO needs to be modified, is not consistent with the requirements of GA
     covered_samples = []
-    idx = 0
     for sample in data:
         if match(classifier, sample[0], dtypes):
-            covered_samples.append(idx)
-        idx += 1
+            covered_samples.append(sample)
+    # ds = [distance(classifier, sample[0]) for sample in covered_samples]
+    # d_sorted_index = sorted(range(ds.__len__()), key=lambda x: ds[x])
+    # knn_samples = [data[idx] for idx in d_sorted_index[:50]]
     return covered_samples
 
 
@@ -81,7 +81,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.dtypes = dtypes
         self.random = rand_func
         self.cosine_matrix = cosine_matrix
-        self.k = 10
+        self.k = MAX_CLASSIFIER
 
         if popset:
             self.popset = popset
@@ -493,7 +493,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
 
     def estimate_label_pr(self, data):
         for cl in self.popset:
-            cl.estimate_label_based([data[l][1] for l in coverage(cl, data, self.dtypes)])
+            cl.estimate_label_based([sample[1] for sample in coverage(cl, data, self.dtypes)])
 
     def clear_sets(self):
         self.matchset = []
