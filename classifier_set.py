@@ -7,6 +7,7 @@
 from math import sqrt
 
 from sklearn.metrics.pairwise import cosine_similarity
+from scipy.spatial.distance import chebyshev
 
 from classifier_methods import ClassifierMethods
 from classifier import Classifier, build_match
@@ -41,10 +42,13 @@ def similarity(classifier, state):
 
 
 def distance(classifier, state):
+    atts = classifier.specified_atts
     center = [(att[1] + att[0]) / 2 for att in classifier.condition]
-    d = sqrt(sum([(state[att] - center[idx])**2 for (idx, att)
-             in enumerate(classifier.specified_atts)]))
-    return d / classifier.specified_atts.__len__()
+    d_euc = (sqrt(sum([(state[att] - center[idx])**2 for (idx, att)
+                     in enumerate(atts)]))) / atts.__len__()
+    center = [center[atts.index(i)] if i in atts else state[i] for i in range(NO_FEATURES)]
+    d_cheby = chebyshev(center, state) / atts.__len__()
+    return d_euc
 
 
 def coverage(classifier, data, dtypes):
@@ -81,7 +85,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.dtypes = dtypes
         self.random = rand_func
         self.cosine_matrix = cosine_matrix
-        self.k = MAX_CLASSIFIER
+        self.k = 10
 
         if popset:
             self.popset = popset
