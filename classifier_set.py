@@ -36,17 +36,22 @@ def similarity(classifier, state):
     center = [(att[1] + att[0]) / 2 for att in classifier.condition]
     x = [state[idx] for idx in classifier.specified_atts]
     try:
-        return cosine_similarity([center, x])[0][1]
+        cos = cosine_similarity([center, x])[0][1] / classifier.specified_atts.__len__()
+        return cosine_similarity([center, x])[0][1] / classifier.specified_atts.__len__()
     except ValueError:
         return 0.0
 
 
 def distance(classifier, state):
     atts = classifier.specified_atts
-    center = [(att[1] + att[0]) / 2 for att in classifier.condition]
+    center_sparse = [(att[1] + att[0]) / 2 for att in classifier.condition]
+    center = [center_sparse[atts.index(i)] if i in atts else state[i] for i in range(NO_FEATURES)]
+    try:
+        d_cos = 1.0 - cosine_similarity([center, state])[0][1] / atts.__len__()
+    except ValueError:
+        d_cos = 1.0
     d_euc = (sqrt(sum([(state[att] - center[idx])**2 for (idx, att)
-                     in enumerate(atts)]))) / atts.__len__()
-    center = [center[atts.index(i)] if i in atts else state[i] for i in range(NO_FEATURES)]
+                      in enumerate(atts)]))) / atts.__len__()
     d_cheby = chebyshev(center, state) / atts.__len__()
     return d_euc
 
@@ -111,12 +116,11 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
                          match(classifier, state, self.dtypes)]
         if self.matchset.__len__() > self.k:
-            sim = [similarity(self.popset[idx], state) for idx in self.matchset]
-            sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
-            # d = [distance(self.popset[idx], state) for idx in self.matchset]
-            # sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
-            knn_matchset = [self.matchset[idx] for idx in sorted_index[:self.k]]
-            self.matchset = sorted(knn_matchset)
+            # sim = [similarity(self.popset[idx], state) for idx in self.matchset]
+            # sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
+            d = [distance(self.popset[idx], state) for idx in self.matchset]
+            sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
+            self.matchset = sorted([self.matchset[idx] for idx in sorted_index[:self.k]])
 
         if self.matchset.__len__() > 0:
             lbls = set.union(*[self.popset[idx].prediction for idx in self.matchset])
@@ -166,12 +170,11 @@ class ClassifierSets(ClassifierMethods, GraphPart):
                          match(classifier, state, self.dtypes)]
 
         if self.matchset.__len__() > self.k:
-            sim = [similarity(self.popset[idx], state) for idx in self.matchset]
-            sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
-            # d = [distance(self.popset[idx], state) for idx in self.matchset]
-            # sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
-            knn_matchset = [self.matchset[idx] for idx in sorted_index[:self.k]]
-            self.matchset = knn_matchset
+            # sim = [similarity(self.popset[idx], state) for idx in self.matchset]
+            # sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
+            d = [distance(self.popset[idx], state) for idx in self.matchset]
+            sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
+            self.matchset = [self.matchset[idx] for idx in sorted_index[:self.k]]
 
     def make_correctset(self, target):
         # self.correctset = [ind for ind in self.matchset if self.popset[ind].prediction == target]
