@@ -5,6 +5,7 @@
 #
 # ------------------------------------------------------------------------------
 from math import sqrt
+from copy import deepcopy
 
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.spatial.distance import chebyshev, mahalanobis
@@ -374,49 +375,55 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         return [offspring1, offspring2, changed]
 
     def mutate(self, child_classifier, state):
+        og = True
         changed = False
-        atts_child = child_classifier.specified_atts
-        cond_child = child_classifier.condition
-        # label_based_child = child_classifier.label_based_tp
+        atts_child = []
+        cond_child = []
 
-        def mutate_single(idx):
-            if idx in atts_child:  # attribute specified in classifier condition
-                if self.random.random() < PROB_HASH:  # remove the specification
-                    ref_2_cond = atts_child.index(idx)
-                    atts_child.remove(idx)
-                    cond_child.pop(ref_2_cond)
-                    return True
-                elif self.dtypes[idx]:  # continuous attribute
-                    mutate_range = self.random.random() * float(self.attribute_info[idx][1] -
-                                                                self.attribute_info[idx][0]) / 2
-                    if self.random.random() < 0.5:  # mutate min of the range
-                        if self.random.random() < 0.5:  # add
-                            cond_child[atts_child.index(idx)][0] += mutate_range
-                        else:  # subtract
-                            cond_child[atts_child.index(idx)][0] -= mutate_range
-                            cond_child[atts_child.index(idx)][0] = max(cond_child[atts_child.index(idx)][0],
-                                                                       self.attribute_info[idx][0])
-                    else:  # mutate max of the range
-                        if self.random.random() < 0.5:  # add
-                            cond_child[atts_child.index(idx)][1] += mutate_range
-                            cond_child[atts_child.index(idx)][1] = min(cond_child[atts_child.index(idx)][1],
-                                                                       self.attribute_info[idx][1])
-                        else:  # subtract
-                            cond_child[atts_child.index(idx)][1] -= mutate_range
-                    cond_child[atts_child.index(idx)].sort()
-                    return True
-                else:
-                    pass
-            else:  # attribute not specified in classifier condition
-                if self.random.random() < (1 - PROB_HASH):
-                    atts_child.append(idx)
-                    cond_child.append(build_match(state[idx], self.attribute_info[idx],
-                                                                  self.dtypes[idx], self.random))
-                    return True
-                return False
-        changed = [mutate_single(att_idx) for att_idx in range(self.attribute_info.__len__())
-                   if self.random.random() < P_MUT]
-        # labels = {k: v for k, v in label_based_child.items() if self.random.random() > P_MUT}
+        while og:
+            atts_child = deepcopy(child_classifier.specified_atts)
+            cond_child = deepcopy(child_classifier.condition)
+
+            def mutate_single(idx):
+                if idx in atts_child:  # attribute specified in classifier condition
+                    if self.random.random() < PROB_HASH:  # remove the specification
+                        ref_2_cond = atts_child.index(idx)
+                        atts_child.remove(idx)
+                        cond_child.pop(ref_2_cond)
+                        return True
+                    elif self.dtypes[idx]:  # continuous attribute
+                        mutate_range = self.random.random() * float(self.attribute_info[idx][1] -
+                                                                    self.attribute_info[idx][0]) / 2
+                        if self.random.random() < 0.5:  # mutate min of the range
+                            if self.random.random() < 0.5:  # add
+                                cond_child[atts_child.index(idx)][0] += mutate_range
+                            else:  # subtract
+                                cond_child[atts_child.index(idx)][0] -= mutate_range
+                                cond_child[atts_child.index(idx)][0] = max(cond_child[atts_child.index(idx)][0],
+                                                                           self.attribute_info[idx][0])
+                        else:  # mutate max of the range
+                            if self.random.random() < 0.5:  # add
+                                cond_child[atts_child.index(idx)][1] += mutate_range
+                                cond_child[atts_child.index(idx)][1] = min(cond_child[atts_child.index(idx)][1],
+                                                                           self.attribute_info[idx][1])
+                            else:  # subtract
+                                cond_child[atts_child.index(idx)][1] -= mutate_range
+                        cond_child[atts_child.index(idx)].sort()
+                        return True
+                    else:
+                        pass
+                else:  # attribute not specified in classifier condition
+                    if self.random.random() < (1 - PROB_HASH):
+                        atts_child.append(idx)
+                        cond_child.append(build_match(state[idx], self.attribute_info[idx],
+                                                                      self.dtypes[idx], self.random))
+                        return True
+                    return False
+
+            changed = [mutate_single(att_idx) for att_idx in range(self.attribute_info.__len__())
+                       if self.random.random() < P_MUT]
+            if atts_child.__len__() > 0:
+                og = False
         return [cond_child, atts_child, changed]
 
     def insert_classifier_pop(self, classifier, search_matchset=False):
