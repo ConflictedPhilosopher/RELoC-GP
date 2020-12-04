@@ -111,11 +111,11 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
                          match(classifier, state, self.dtypes)]
         if self.matchset.__len__() > self.k:
-            # sim = [similarity(self.popset[idx], state) for idx in self.matchset]
-            # sim_sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
-            d = [distance(self.popset[idx], state) for idx in self.matchset]
-            d_sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
-            knn_matchset = [self.matchset[idx] for idx in d_sorted_index[:self.k]]
+            sim = [similarity(self.popset[idx], state) for idx in self.matchset]
+            sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
+            # d = [distance(self.popset[idx], state) for idx in self.matchset]
+            # sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
+            knn_matchset = [self.matchset[idx] for idx in sorted_index[:self.k]]
             self.matchset = sorted(knn_matchset)
 
         if self.matchset.__len__() > 0:
@@ -166,11 +166,11 @@ class ClassifierSets(ClassifierMethods, GraphPart):
                          match(classifier, state, self.dtypes)]
 
         if self.matchset.__len__() > self.k:
-            # sim = [similarity(self.popset[idx], state) for idx in self.matchset]
-            # sim_sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
-            d = [distance(self.popset[idx], state) for idx in self.matchset]
-            d_sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
-            knn_matchset = [self.matchset[idx] for idx in d_sorted_index[:self.k]]
+            sim = [similarity(self.popset[idx], state) for idx in self.matchset]
+            sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
+            # d = [distance(self.popset[idx], state) for idx in self.matchset]
+            # sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
+            knn_matchset = [self.matchset[idx] for idx in sorted_index[:self.k]]
             self.matchset = knn_matchset
 
     def make_correctset(self, target):
