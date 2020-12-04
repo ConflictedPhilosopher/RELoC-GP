@@ -112,10 +112,10 @@ class REGLoGP:
                                            float(self.population.micro_pop_size/MAX_CLASSIFIER),
                                            float(self.population.popset.__len__()/MAX_CLASSIFIER)])
 
-                if float(self.tracked_loss / TRACK_FREQ) - loss_old > 0.1:
-                    stop_training = True
-                else:
-                    loss_old = self.tracked_loss / TRACK_FREQ
+                # if float(self.tracked_loss / TRACK_FREQ) - loss_old > 0.1:
+                #     stop_training = True
+                # else:
+                # loss_old = self.tracked_loss / TRACK_FREQ
                 self.tracked_loss = 0
 
             self.iteration += 1
