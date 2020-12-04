@@ -131,9 +131,9 @@ class REGLoGP:
 
         reporting = Reporting(self.exp)
         reporting.write_pop(self.population.popset, self.data.dtypes)
+        global_time = self.timer.get_global_timer()
         reporting.write_model_stats(self.population, self.timer, train_evaluation, train_coverage,
                                     test_evaluation, test_coverage)
-        global_time = self.timer.get_global_timer()
 
         print("Process Time (min): ", round(global_time, 5))
 
