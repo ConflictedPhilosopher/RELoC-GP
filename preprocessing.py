@@ -8,8 +8,9 @@ from os.path import join
 from math import sqrt
 
 import pandas as pd
-from numpy import array
+from numpy import array, cov
 from scipy import sparse
+from scipy.linalg import inv
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.model_selection import train_test_split
 
@@ -32,6 +33,7 @@ class Preprocessing:
         self.cvir = 0.0
         self.attribute_info = []
         self.dtypes = []
+        self.cov_inv = None
         self.id = False
         self.data_train_list = []
         self.data_test_list = []
@@ -111,6 +113,7 @@ class Preprocessing:
             elif dtype == "float64":
                 self.attribute_info.append([data_complete.iloc[:, it].min(),
                                             data_complete.iloc[:, it].max()])
+        self.cov_inv = inv(cov(data_complete.iloc[:, :NO_FEATURES].values.T))
 
     # characterize classes
     def characterize_labels(self, data_complete):

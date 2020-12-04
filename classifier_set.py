@@ -7,7 +7,7 @@
 from math import sqrt
 
 from sklearn.metrics.pairwise import cosine_similarity
-from scipy.spatial.distance import chebyshev
+from scipy.spatial.distance import chebyshev, mahalanobis
 
 from classifier_methods import ClassifierMethods
 from classifier import Classifier, build_match
@@ -42,17 +42,19 @@ def similarity(classifier, state):
         return 0.0
 
 
-def distance(classifier, state):
+def distance(classifier, state, cov_inv=None):
     atts = classifier.specified_atts
     center_sparse = [(att[1] + att[0]) / 2 for att in classifier.condition]
     center = [center_sparse[atts.index(i)] if i in atts else state[i] for i in range(NO_FEATURES)]
+    if cov_inv.any():
+        d_mah = mahalanobis(center, state, cov_inv)/atts.__len__()
     try:
-        d_cos = 1.0 - cosine_similarity([center, state])[0][1] / atts.__len__()
+        d_cos = 1.0 - cosine_similarity([center_sparse, [state[i] for i in atts]])[0][1]
     except ValueError:
         d_cos = 1.0
     d_euc = (sqrt(sum([(state[att] - center[idx])**2 for (idx, att)
                       in enumerate(atts)]))) / atts.__len__()
-    d_cheby = chebyshev(center, state) / atts.__len__()
+    d_cheby = chebyshev(center_sparse, [state[i] for i in atts])
     return d_euc
 
 
@@ -76,7 +78,7 @@ def ga_coverage(classifier, data, dtypes):
 
 class ClassifierSets(ClassifierMethods, GraphPart):
     def __init__(self, attribute_info, dtypes, rand_func, sim_delta, sim_mode='global', clustering_method=None,
-                 cosine_matrix=None, popset=None):
+                 cosine_matrix=None, popset=None, data_cov_inv=None):
         ClassifierMethods.__init__(self, dtypes)
         GraphPart.__init__(self, sim_delta)
         self.popset = []
@@ -110,6 +112,8 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             self.clustering_method = 2
         else:
             self.clustering_method = 0
+        if data_cov_inv.any():
+            self.cov_inv = data_cov_inv
 
     def make_matchset(self, state, target, it):
         covering = True
@@ -118,7 +122,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         if self.matchset.__len__() > self.k:
             # sim = [similarity(self.popset[idx], state) for idx in self.matchset]
             # sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
-            d = [distance(self.popset[idx], state) for idx in self.matchset]
+            d = [distance(self.popset[idx], state, self.cov_inv) for idx in self.matchset]
             sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
             self.matchset = sorted([self.matchset[idx] for idx in sorted_index[:self.k]])
 

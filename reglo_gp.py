@@ -44,7 +44,7 @@ class REGLoGP:
         else:
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
                                              sim_mode='global', sim_delta=0.9, clustering_method=None,
-                                             cosine_matrix=self.data.sim_matrix)
+                                             cosine_matrix=self.data.sim_matrix, data_cov_inv=self.data.cov_inv)
 
         self.iteration = 1
         try:
