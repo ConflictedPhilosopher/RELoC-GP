@@ -9,13 +9,41 @@ from math import sqrt
 
 import pandas as pd
 from numpy import array, cov
-from scipy import sparse
+from scipy.sparse import lil_matrix, csr_matrix
 from scipy.linalg import inv
+from numpy import argsort, mean
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.model_selection import train_test_split
+from sklearn.ensemble import ExtraTreesClassifier
+from skmultilearn.problem_transform import BinaryRelevance
 
 from visualization import plot_bar, plot_heatmap
 from config import *
+
+
+def select_features(data_train, data_test):
+    x_train = data_train.iloc[:, :NO_FEATURES]
+    y_train = data_train.iloc[:, NO_FEATURES:-1]
+    x_train_sp = lil_matrix(x_train).toarray()
+    y_train_sp = lil_matrix(y_train).toarray()
+
+    forest = ExtraTreesClassifier(n_estimators=100, random_state=SEED_NUMBER)
+    classifier = BinaryRelevance(forest)
+    classifier.fit(x_train_sp, y_train_sp)
+    feature_scores = [forest.feature_importances_ for forest in classifier.classifiers_]
+
+    indices = [argsort(importance)[::-1] for importance in feature_scores]
+    selected_per_class = [index[:int(0.1 * NO_FEATURES)].tolist() for index in indices]
+    selected_union = list(set().union(*selected_per_class))
+
+    avg_feature_scores = mean(feature_scores, axis=0)
+    avg_indices = argsort(avg_feature_scores)[::-1]
+    selected_avg = avg_indices[:int(0.1 * NO_FEATURES)]
+    drop_col = [idx for idx in range(NO_FEATURES) if idx not in selected_union]
+
+    train_red = data_train.drop(data_train.columns[drop_col], axis=1)
+    test_red = data_test.drop(data_test.columns[drop_col], axis=1)
+    return train_red, test_red
 
 
 class Preprocessing:
@@ -52,6 +80,7 @@ class Preprocessing:
         if train_test:
             data_train = self.load_data(train_data_path)
             data_test = self.load_data(test_data_path)
+            data_train, data_test = select_features(data_train, data_test)
             data_complete = pd.concat([data_train, data_test])
 
             self.data_train_list = self.format_data(data_train)
@@ -61,6 +90,7 @@ class Preprocessing:
         elif complete:
             data_complete = self.load_data(data_path)
             data_train, data_test = self.train_test_split(data_complete)
+            data_train, data_test = select_features(data_train, data_test)
             self.data_train_list = self.format_data(data_train)
             self.data_test_list = self.format_data(data_test)
         else:
@@ -97,8 +127,6 @@ class Preprocessing:
         except FileNotFoundError as fnferror:
             print(fnferror)
 
-    # feature selection
-
     # characterize features
     def characterize_features(self, data_complete):
         for dtype in data_complete.iloc[:, :NO_FEATURES].dtypes:
@@ -120,7 +148,7 @@ class Preprocessing:
         self.label_count = NO_LABELS
         self.label_ref = {k: v for k, v in enumerate(data_complete.columns[NO_FEATURES:-1])}
         label_matrix = data_complete.iloc[:, NO_FEATURES:-1]
-        label_matrix_sparse = sparse.csr_matrix(array(label_matrix).transpose())
+        label_matrix_sparse = csr_matrix(array(label_matrix).transpose())
         self.sim_matrix = cosine_similarity(label_matrix_sparse)
 
     # ِ multi-label properties
