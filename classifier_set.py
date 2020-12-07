@@ -121,8 +121,6 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
                          match(classifier, state, self.dtypes)]
         if self.matchset.__len__() > self.k:
-            # sim = [similarity(self.popset[idx], state) for idx in self.matchset]
-            # sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
             d = [distance(self.popset[idx], state, self.cov_inv) for idx in self.matchset]
             sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
             self.matchset = sorted([self.matchset[idx] for idx in sorted_index[:self.k]])
@@ -177,7 +175,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         if self.matchset.__len__() > self.k:
             # sim = [similarity(self.popset[idx], state) for idx in self.matchset]
             # sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
-            d = [distance(self.popset[idx], state) for idx in self.matchset]
+            d = [distance(self.popset[idx], state, self.cov_inv) for idx in self.matchset]
             sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
             self.matchset = [self.matchset[idx] for idx in sorted_index[:self.k]]
 
