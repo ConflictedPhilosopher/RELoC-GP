@@ -34,21 +34,22 @@ def select_features(data_train, data_test):
 
     indices = [argsort(importance)[::-1] for importance in feature_scores]
     selected_per_class = [index[:int(0.1 * NO_FEATURES)].tolist() for index in indices]
-    selected_union = list(set().union(*selected_per_class))
+    selected = list(set().union(*selected_per_class))
 
     avg_feature_scores = mean(feature_scores, axis=0)
     avg_indices = argsort(avg_feature_scores)[::-1]
-    selected_avg = avg_indices[:int(0.1 * NO_FEATURES)]
-    drop_col = [idx for idx in range(NO_FEATURES) if idx not in selected_union]
+    selected = avg_indices[:int(0.1 * NO_FEATURES)]
+    drop_col = [idx for idx in range(NO_FEATURES) if idx not in selected]
 
     train_red = data_train.drop(data_train.columns[drop_col], axis=1)
     test_red = data_test.drop(data_test.columns[drop_col], axis=1)
-    return train_red, test_red
+    return train_red, test_red, selected.__len__()
 
 
 class Preprocessing:
     def __init__(self):
         self.label_count = 0
+        self.no_features = 0
         self.label_ref = dict()
         self.distinct_lp_count = 0
         self.unseen_test_lp = []
@@ -80,7 +81,7 @@ class Preprocessing:
         if train_test:
             data_train = self.load_data(train_data_path)
             data_test = self.load_data(test_data_path)
-            data_train, data_test = select_features(data_train, data_test)
+            data_train, data_test, self.no_features = select_features(data_train, data_test)
             data_complete = pd.concat([data_train, data_test])
 
             self.data_train_list = self.format_data(data_train)
@@ -90,7 +91,8 @@ class Preprocessing:
         elif complete:
             data_complete = self.load_data(data_path)
             data_train, data_test = self.train_test_split(data_complete)
-            data_train, data_test = select_features(data_train, data_test)
+            data_train, data_test, self.no_features = select_features(data_train, data_test)
+            data_complete = pd.concat([data_train, data_test])
             self.data_train_list = self.format_data(data_train)
             self.data_test_list = self.format_data(data_test)
         else:
@@ -146,8 +148,8 @@ class Preprocessing:
     # characterize classes
     def characterize_labels(self, data_complete):
         self.label_count = NO_LABELS
-        self.label_ref = {k: v for k, v in enumerate(data_complete.columns[NO_FEATURES:-1])}
-        label_matrix = data_complete.iloc[:, NO_FEATURES:-1]
+        self.label_ref = {k: v for k, v in enumerate(data_complete.columns[self.no_features:-1])}
+        label_matrix = data_complete.iloc[:, self.no_features:-1]
         label_matrix_sparse = csr_matrix(array(label_matrix).transpose())
         self.sim_matrix = cosine_similarity(label_matrix_sparse)
 
@@ -163,12 +165,12 @@ class Preprocessing:
         self.distinct_lp_count = lp_dict.__len__()
         self.imbalance_lp = max(lp_dict.values()) / min(lp_dict.values())
         self.card = count / data_complete.__len__()
-        self.density = self.card / NO_LABELS
-        counts = [data_complete[classs].sum() for classs in data_complete.columns[NO_FEATURES:-1]]
-        class_count = dict(zip(list(data_complete.columns)[NO_FEATURES:-1], counts))
+        self.density = self.card / self.label_count
+        counts = [data_complete[classs].sum() for classs in data_complete.columns[self.no_features:-1]]
+        class_count = dict(zip(list(data_complete.columns)[self.no_features:-1], counts))
         class_pi = [val / data_complete.__len__() for val in list(class_count.values())]
         imbalance_label = [max(class_pi) / val for val in class_pi]
-        self.imbalance_mean = sum(imbalance_label) / NO_LABELS
+        self.imbalance_mean = sum(imbalance_label) / self.label_count
         temp = [(val - self.imbalance_mean) ** 2 for val in imbalance_label]
         imbalance_label_sigma = sqrt(sum(temp) / (self.label_count - 1))
         self.cvir = imbalance_label_sigma / self.imbalance_mean
@@ -227,10 +229,10 @@ class Preprocessing:
         data.sample(frac=1.0, random_state=SEED_NUMBER)
         if self.id:
             for idx, row in data.iterrows():
-                data_list.append([list(row[:NO_FEATURES]), row[-1], idx])
+                data_list.append([list(row[:self.no_features]), row[-1], idx])
         else:
             for idx, row in data.iterrows():
-                data_list.append([list(row[:NO_FEATURES]), row[-1]])
+                data_list.append([list(row[:self.no_features]), row[-1]])
         return data_list
 
 
