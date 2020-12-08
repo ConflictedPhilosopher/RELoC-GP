@@ -64,7 +64,7 @@ class Classifier:
 
     def classifier_reboot(self, classifier_info, dtypes):
         classifier_info = classifier_info.to_list()
-        condition = classifier_info[:NO_FEATURES]
+        condition = classifier_info[:dtypes.__len__()]
 
         def update_cond(ref0, att_val0):
             if dtypes[ref0] == 1:
@@ -80,11 +80,11 @@ class Classifier:
             else:
                 update_cond(ref, att_val)
 
-        self.prediction = set(int(n) for n in classifier_info[NO_FEATURES+1].split(";"))
-        label_precisions = classifier_info[NO_FEATURES + 2]
+        self.prediction = set(int(n) for n in classifier_info[dtypes.__len__()+1].split(";"))
+        label_precisions = classifier_info[dtypes.__len__() + 2]
         self.label_based = {int(kv.split("%")[0]): float(kv.split("%")[1]) for kv in label_precisions.split(";")}
         self.fitness, self.loss, self.numerosity, self.match_count, self.ave_matchset_size, self.init_time, \
-            self.ga_time = classifier_info[NO_FEATURES + 3:]
+            self.ga_time = classifier_info[dtypes.__len__() + 3:]
 
         # TODO parent prediction to be added
 

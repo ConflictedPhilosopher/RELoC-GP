@@ -123,7 +123,7 @@ class REGLoGP:
         self.training_track.close()
 
         self.timer.start_evaluation()
-        self.population.pop_average_eval()
+        self.population.pop_average_eval(self.data.no_features)
         self.population.estimate_label_pr(samples_training)
         [test_evaluation, test_class_precision, test_coverage] = self.evaluation()
         [train_evaluation, _, train_coverage] = self.evaluation(False)

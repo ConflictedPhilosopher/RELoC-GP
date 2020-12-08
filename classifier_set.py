@@ -46,7 +46,7 @@ def similarity(classifier, state):
 def distance(classifier, state, cov_inv=None):
     atts = classifier.specified_atts
     center_sparse = [(att[1] + att[0]) / 2 for att in classifier.condition]
-    center = [center_sparse[atts.index(i)] if i in atts else state[i] for i in range(NO_FEATURES)]
+    center = [center_sparse[atts.index(i)] if i in atts else state[i] for i in range(state.__len__())]
     if cov_inv.any():
         d_mah = mahalanobis(center, state, cov_inv)/atts.__len__()
     try:
@@ -516,8 +516,8 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.correctset = []
 
 # evaluation methods
-    def pop_average_eval(self):
-        generality_sum = sum([(NO_FEATURES - classifier.specified_atts.__len__())/float(NO_FEATURES)
+    def pop_average_eval(self, no_features):
+        generality_sum = sum([(no_features - classifier.specified_atts.__len__())/float(no_features)
                               for classifier in self.popset])
         fitness_sum = sum([classifier.fitness for classifier in self.popset])
         try:

@@ -59,7 +59,7 @@ class Reporting():
             raise
 
         method = ClassifierMethods(dtypes)
-        header = ",".join(['f'+str(i) for i in range(NO_FEATURES)])
+        header = ",".join(['f'+str(i) for i in range(dtypes.__len__())])
         header += ", specificity, prediction, label_precision, fitness, hloss, numerosity, match_count, " \
                   "avg_match_set, init_time, ga_time \n"
         model_file.write(header)

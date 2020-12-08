@@ -64,7 +64,7 @@ class ClassifierMethods:
 
     def classifier_print(self, classifier):
         classifier_string = ""
-        for ref in range(NO_FEATURES):
+        for ref in range(self.dtypes.__len__()):
             if ref in classifier.specified_atts:
                 ind = classifier.specified_atts.index(ref)
                 if self.dtypes[ref] == 1:
@@ -75,7 +75,7 @@ class ClassifierMethods:
             else:
                 classifier_string += "#"
             classifier_string += ","
-        classifier_string += str("%.4f" % float(classifier.specified_atts.__len__()/NO_FEATURES)) + ","
+        classifier_string += str("%.4f" % float(classifier.specified_atts.__len__()/self.dtypes.__len__())) + ","
         prediction_string = ";".join([str(label) for label in classifier.prediction])
         classifier_string += (prediction_string + ",")
         label_precision = ";".join([str(label) + '%' + str(round(pr, 3)) for label, pr in classifier.label_based.items()])
