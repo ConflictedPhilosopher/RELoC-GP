@@ -131,19 +131,19 @@ class Preprocessing:
 
     # characterize features
     def characterize_features(self, data_complete):
-        for dtype in data_complete.iloc[:, :NO_FEATURES].dtypes:
+        for dtype in data_complete.iloc[:, :self.no_features].dtypes:
             if dtype == "float64":
                 self.dtypes.append(1)
             else:
                 self.dtypes.append(0)
-        dtypes = data_complete.iloc[:, :NO_FEATURES].dtypes
+        dtypes = data_complete.iloc[:, :self.no_features].dtypes
         for (it, dtype) in enumerate(dtypes):
             if dtype == "int64":
                 self.attribute_info.append(0)
             elif dtype == "float64":
                 self.attribute_info.append([data_complete.iloc[:, it].min(),
                                             data_complete.iloc[:, it].max()])
-        self.cov_inv = inv(cov(data_complete.iloc[:, :NO_FEATURES].values.T))
+        self.cov_inv = inv(cov(data_complete.iloc[:, :self.no_features].values.T))
 
     # characterize classes
     def characterize_labels(self, data_complete):
