@@ -120,9 +120,12 @@ class Classifier:
         self.fitness = fitness
 
     def estimate_label_based(self, target_labels):
-        for k in self.prediction:
-            count = [1 for labels in target_labels if k in labels]
-            self.label_based[k] = sum(count)/target_labels.__len__()
+        try:
+            for k in self.prediction:
+                count = [1 for labels in target_labels if k in labels]
+                self.label_based[k] = sum(count)/target_labels.__len__()
+        except ZeroDivisionError:
+            pass
 
 
 if __name__ == "__main__":

@@ -36,10 +36,11 @@ class REGLoGP:
             trained_model = RebootModel(self.exp, self.data.dtypes)
             pop = trained_model.get_model()
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
-                                             sim_mode='global', sim_delta=0.1, clustering_method=None,
-                                             cosine_matrix=self.data.sim_matrix, popset=pop)
+                                             sim_mode='global', sim_delta=0.9, clustering_method=None,
+                                             cosine_matrix=self.data.sim_matrix, data_cov_inv=self.data.cov_inv,
+                                             popset=pop)
             self.population.micro_pop_size = sum([classifier.numerosity for classifier in pop])
-            self.population.pop_average_eval()
+            self.population.pop_average_eval(self.data.no_features)
             analyze(pop, data)
         else:
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=random,
@@ -101,7 +102,7 @@ class REGLoGP:
                 self.timer.start_evaluation()
                 test_fscore = track_performance(samples_test)
                 train_fscore = track_performance(samples_training)
-                self.population.pop_average_eval()
+                self.population.pop_average_eval(self.data.no_features)
                 self.training_track.write(str(self.iteration) + ", " + self.population.get_pop_tracking() + ", "
                                           + str("%.4f" % train_fscore) + ", "
                                           + str("%.4f" % test_fscore) + ", "
