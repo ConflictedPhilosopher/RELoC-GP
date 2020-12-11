@@ -49,7 +49,7 @@ def select_features(data_train, data_test):
 class Preprocessing:
     def __init__(self):
         self.label_count = 0
-        self.no_features = 0
+        self.no_features = NO_FEATURES
         self.label_ref = dict()
         self.distinct_lp_count = 0
         self.unseen_test_lp = []
