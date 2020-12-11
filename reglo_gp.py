@@ -8,6 +8,8 @@
 from os.path import join, curdir
 import random
 
+from sklearn.cluster import KMeans
+
 from classifier_set import ClassifierSets
 from prediction import *
 from timer import Timer
@@ -170,6 +172,7 @@ class REGLoGP:
     def evaluation(self, test=True):
         performance = Performance()
         vote_list = []
+        target_list = []
         self.no_match = 0
 
         if test:
@@ -188,6 +191,14 @@ class REGLoGP:
             bi_partition = rank_cut
         else:
             raise Exception("prediction threshold method unidentified!")
+
+        k = 10
+        kmeans = KMeans(n_clusters=k, random_state=SEED_NUMBER).fit([sample[0] for sample in samples])
+        samples_clustered = []
+        for c in range(k):
+            idx_c = [s for s, cluster in enumerate(kmeans.labels_) if cluster == c]
+            samples_c = [samples[idx] for idx in idx_c]
+            samples_clustered.append(samples_c)
 
         def get_prediction_prob(sample):
             self.population.make_eval_matchset(sample[0])
@@ -214,17 +225,22 @@ class REGLoGP:
                             for k, v in self.population.popset[idx].label_based.items():
                                 print(self.data.label_ref[k], round(v, 3))
 
+            vote_list_c.append(vote0)
             vote_list.append(vote0)
             self.population.clear_sets()
 
-        [get_prediction_prob(sample) for sample in samples]
-        target_list = [sample[1] for sample in samples]
-        theta = optimize_theta(vote_list, target_list)
+        for samples_c in samples_clustered:
+            vote_list_c = []
+            [get_prediction_prob(sample) for sample in samples_c]
+            target_list_c = [sample[1] for sample in samples_c]
+            for sample in samples_c:
+                target_list.append(sample[1])
+            theta = optimize_theta(vote_list_c, target_list_c)
 
-        for t, vote in zip(target_list, vote_list):
-            prediction = bi_partition(vote, theta)
-            performance.update_example_based(vote, prediction, t)
-            performance.update_class_based(prediction, t)
+            for t, vote in zip(target_list_c, vote_list_c):
+                prediction = bi_partition(vote, theta)
+                performance.update_example_based(vote, prediction, t)
+                performance.update_class_based(prediction, t)
 
         performance.micro_average()
         performance.macro_average()
