@@ -11,6 +11,8 @@ import random
 import time
 from collections import Counter
 
+from sklearn.cluster import KMeans
+
 from preprocessing import Preprocessing
 from config import *
 from reglo_gp import REGLoGP
@@ -19,8 +21,8 @@ from visualization import plot_records, plot_bar
 
 def handle_model(args):
     exp, data = args
-    model = REGLoGP(exp, data)
-    ml_perf, class_prec, track_to_plot = model.train_model()
+    model = REGLoGP(exp)
+    ml_perf, class_prec, track_to_plot = model.fit(data)
     return [ml_perf, class_prec, track_to_plot]
 
 
