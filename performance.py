@@ -20,14 +20,14 @@ def exact_match(prediction, target):
 
 def precision(prediction, target):
     try:
-        return prediction.intersection(target).__len__() / target.__len__()
+        return prediction.intersection(target).__len__() / prediction.__len__()
     except ZeroDivisionError:
         return 0.0
 
 
 def recall(prediction, target):
     try:
-        return prediction.intersection(target).__len__() / prediction.__len__()
+        return prediction.intersection(target).__len__() / target.__len__()
     except ZeroDivisionError:
         return 0.0
 
