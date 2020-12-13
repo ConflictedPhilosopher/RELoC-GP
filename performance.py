@@ -47,15 +47,15 @@ def fscore(prediction, target):
         return 0.0
 
 
-def hamming_loss(prediction, target):
-    return prediction.symmetric_difference(target).__len__() / NO_LABELS
+def hamming_loss(prediction, target, n_labels):
+    return prediction.symmetric_difference(target).__len__() / n_labels
 
 
-def rank_loss(vote, target):
+def rank_loss(vote, target, n_labels):
     if not vote:
         return 1.0
 
-    target_complement = set(range(0, NO_LABELS)).difference(target)
+    target_complement = set(range(0, n_labels)).difference(target)
     loss = 0
     for tc in target_complement:
         for t in target:
@@ -89,6 +89,7 @@ def coverage(vote, target):
 
 class Performance:
     def __init__(self):
+        self.n_labels = NO_LABELS
         self.exact_match_example = 0.0
         self.precision_example = 0.0
         self.recall_example = 0.0
@@ -97,7 +98,7 @@ class Performance:
         self.hamming_loss_example = 0.0
         self.rank_loss_example = 0.0
         self.one_error_example = 0.0
-        self.class_based_measure = [dict(TP=0.0, FP=0.0, TN=0.0, FN=0.0)] * NO_LABELS
+        self.class_based_measure = [dict(TP=0.0, FP=0.0, TN=0.0, FN=0.0)] * self.n_labels
         self.micro_precision = 0.0
         self.micro_recall = 0.0
         self.micro_fscore = 0.0
@@ -108,14 +109,14 @@ class Performance:
 
     def update_example_based(self, vote, prediction, target):
         self.exact_match_example += exact_match(prediction, target)
-        self.hamming_loss_example += hamming_loss(prediction, target)
+        self.hamming_loss_example += hamming_loss(prediction, target, self.n_labels)
         self.precision_example += precision(prediction, target)
         self.recall_example += recall(prediction, target)
         self.fscore_example += fscore(prediction, target)
         self.accuracy_example += accuracy(prediction, target)
         if PREDICTION_METHOD == 2:
             self.one_error_example += one_error(vote, target)
-            self.rank_loss_example += rank_loss(vote, target)
+            self.rank_loss_example += rank_loss(vote, target, self.n_labels)
             # self.coverage(vote, target)
 
     def update_class_based(self, prediction, target):
@@ -148,15 +149,15 @@ class Performance:
 
     def macro_average(self):
         self.macro_precision = sum([class_dict['TP'] / (class_dict['TP'] + class_dict['FP'] + 1e-3) for
-                                    class_dict in self.class_based_measure]) / NO_LABELS
+                                    class_dict in self.class_based_measure]) / self.n_labels
         self.macro_recall = sum([class_dict['TP'] / (class_dict['TP'] + class_dict['FN'] + 1e-3) for
-                                class_dict in self.class_based_measure]) / NO_LABELS
+                                class_dict in self.class_based_measure]) / self.n_labels
         self.macro_fscore = 2 * (self.macro_precision * self.macro_recall) \
             / (self.macro_precision + self.macro_recall + 1e-3)
 
     def roc(self, votes, targets):
-        vote_list = zeros((votes.__len__(), NO_LABELS))
-        target_list = zeros((votes.__len__(), NO_LABELS))
+        vote_list = zeros((votes.__len__(), self.n_labels))
+        target_list = zeros((votes.__len__(), self.n_labels))
         idx = 0
         for vote, target in zip(votes, targets):
             for k, v in vote.items():
@@ -166,11 +167,11 @@ class Performance:
             idx += 1
 
         roc_auc = []
-        for l in range(NO_LABELS):
+        for l in range(self.n_labels):
             fpr, tpr, _ = roc_curve(target_list[:, l], vote_list[:, l])
             roc_auc.append(auc(fpr, tpr))
         roc_auc = [0 if isnan(val) else val for val in roc_auc]
-        self.roc_auc = sum(roc_auc) / NO_LABELS
+        self.roc_auc = sum(roc_auc) / self.n_labels
 
     def get_report(self, sample_count):
         multi_label_perf = dict()
