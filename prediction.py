@@ -45,29 +45,30 @@ def max_prediction(matching_cls, randint_func):
 
 
 def aggregate_prediction(matching_cls):
-    vote = {}
-
     predicted_labels = set().union(*[cl.prediction for cl in matching_cls])
+    # vote = dict.fromkeys(predicted_labels, 0.0)
+    # numerosity = dict.fromkeys(predicted_labels, 0)
+    # def update_value(cl):
+    #     if sum(cl.label_based.values()) > 0:
+    #         label_acc = cl.label_based
+    #     else:
+    #         label_acc = {k: cl.fitness for k in cl.prediction}
+    #     for label in cl.prediction:
+    #         vote[label] += label_acc[label]
+    #         numerosity[label] += 1
+    #
+    # [update_value(cl) for cl in matching_cls]
+    # try:
+    #     vote = {k: v / numerosity[k] for k, v in vote.items()}
+    #     # return vote
+    # except (ZeroDivisionError, ValueError):
+    #     pass
+
     vote = dict.fromkeys(predicted_labels, 0.0)
-    numerosity = dict.fromkeys(predicted_labels, 0)
-
-    def update_value(cl):
-        if sum(cl.label_based.values()) > 0:
-            label_acc = cl.label_based
-        else:
-            label_acc = {k: cl.fitness for k in cl.prediction}
-        for label in cl.prediction:
-            vote[label] += label_acc[label]
-            numerosity[label] += 1
-
-    [update_value(cl) for cl in matching_cls]
-    try:
-        max_vote = max(vote.values())
-        vote = {k: v / numerosity[k] for k, v in vote.items()}
-        # vote = {k: v / max_vote for k, v in vote.items()}
-        return vote
-    except (ZeroDivisionError, ValueError):
-        pass
+    for l in predicted_labels:
+        votes = [cl.label_based.get(l, 0.0) for cl in matching_cls]
+        vote[l] = max(votes)
+    return vote
 
 
 def optimize_theta(votes, targets):
