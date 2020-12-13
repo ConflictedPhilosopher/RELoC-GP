@@ -93,7 +93,7 @@ class ClassifierSets(ClassifierMethods, GraphPart):
         self.dtypes = dtypes
         self.random = rand_func
         self.cosine_matrix = cosine_matrix
-        self.k = 10
+        self.k = MAX_CLASSIFIER
 
         if popset:
             self.popset = popset
@@ -150,12 +150,9 @@ class ClassifierSets(ClassifierMethods, GraphPart):
             else:
                 self.insert_classifier_pop(new_classifier, True)
                 self.matchset.append(self.popset.__len__() - 1)
-            return target
         else:
             matching_cls = [self.popset[idx] for idx in self.matchset]
-            votes = aggregate_prediction([self.popset[ref] for ref in self.matchset])
-            label_prediction = one_threshold(votes)
-            new_classifiers, pop_reduce = self.apply_partitioning(it, matching_cls, votes)
+            new_classifiers, pop_reduce = self.apply_partitioning(it, matching_cls)
             if new_classifiers.__len__() > 0:
                 [self.insert_classifier_pop(classifier, True) for classifier in new_classifiers]
                 self.matchset += [self.popset.__len__() - 1 - i for i in range(new_classifiers.__len__())]
@@ -166,15 +163,12 @@ class ClassifierSets(ClassifierMethods, GraphPart):
                     self.remove_from_matchset(idx - i)
                     i += 1
                 self.micro_pop_size -= pop_reduce
-            return label_prediction
 
     def make_eval_matchset(self, state):
         self.matchset = [ind for (ind, classifier) in enumerate(self.popset) if
                          match(classifier, state, self.dtypes)]
 
         if self.matchset.__len__() > self.k:
-            # sim = [similarity(self.popset[idx], state) for idx in self.matchset]
-            # sorted_index = sorted(range(sim.__len__()), key=lambda x: sim[x], reverse=True)
             d = [distance(self.popset[idx], state, self.cov_inv) for idx in self.matchset]
             sorted_index = sorted(range(d.__len__()), key=lambda x: d[x])
             self.matchset = [self.matchset[idx] for idx in sorted_index[:self.k]]
