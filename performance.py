@@ -5,8 +5,8 @@
 #
 # ------------------------------------------------------------------------------
 import operator
-from sklearn.metrics import roc_curve, auc
-from numpy import zeros, isnan
+from sklearn.metrics import roc_curve, auc, coverage_error
+from numpy import zeros, isnan, array
 
 from config import *
 
@@ -78,13 +78,16 @@ def one_error(vote, target):
         return 1.0
 
 
-def coverage(vote, target):
-    ranking = {k: v for k, v in sorted(vote.items(), key=lambda item: item[1], reverse=True)}
-    prediction_ranks = list(ranking.values())
-    target_ranks = {}
-    for l in target:
-        target_ranks[l] = prediction_ranks.index(ranking.get(l, ))
-    print(2)
+def coverage(vote, target, no_labels):
+    vote0 = zeros(no_labels)
+    target0 = zeros(no_labels)
+    for k, v in vote.items():
+        vote0[k] = v
+    for t in target:
+        target0[t] = 1.0
+    vote0 = vote0.reshape((1, no_labels))
+    target0 = target0.reshape((1, no_labels))
+    return coverage_error(target0, vote0)
 
 
 class Performance:
@@ -106,6 +109,7 @@ class Performance:
         self.macro_recall = 0.0
         self.macro_fscore = 0.0
         self.roc_auc = 0.0
+        self.coverage_example = 0.0
 
     def update_example_based(self, vote, prediction, target):
         self.exact_match_example += exact_match(prediction, target)
@@ -117,7 +121,7 @@ class Performance:
         if PREDICTION_METHOD == 2:
             self.one_error_example += one_error(vote, target)
             self.rank_loss_example += rank_loss(vote, target, self.n_labels)
-            # self.coverage(vote, target)
+            self.coverage_example += coverage(vote, target, self.n_labels)
 
     def update_class_based(self, prediction, target):
         tp = target.intersection(prediction)
@@ -189,6 +193,7 @@ class Performance:
         multi_label_perf['macro-re'] = self.macro_recall
         multi_label_perf['1e'] = self.one_error_example / sample_count
         multi_label_perf['rl'] = self.rank_loss_example / sample_count
+        multi_label_perf['cov-error'] = self.coverage_example / sample_count
         multi_label_perf['roc-auc'] = self.roc_auc
         return multi_label_perf
 
