@@ -47,16 +47,15 @@ def distance(classifier, state, cov_inv=None):
     atts = classifier.specified_atts
     center_sparse = [(att[1] + att[0]) / 2 for att in classifier.condition]
     center = [center_sparse[atts.index(i)] if i in atts else state[i] for i in range(state.__len__())]
-    if cov_inv.any():
-        d_mah = mahalanobis(center, state, cov_inv)/atts.__len__()
-    try:
-        d_cos = 1.0 - cosine_similarity([center_sparse, [state[i] for i in atts]])[0][1]
-    except ValueError:
-        d_cos = 1.0
-    d_euc = (sqrt(sum([(state[att] - center[idx])**2 for (idx, att)
-                      in enumerate(atts)]))) / atts.__len__()
-    d_cheby = chebyshev(center_sparse, [state[i] for i in atts])
-    return d_euc
+    d_mah = mahalanobis(center, state, cov_inv)/atts.__len__()
+    # try:
+    #     d_cos = 1.0 - cosine_similarity([center_sparse, [state[i] for i in atts]])[0][1]
+    # except ValueError:
+    #     d_cos = 1.0
+    # d_euc = (sqrt(sum([(state[att] - center[idx])**2 for (idx, att)
+    #                   in enumerate(atts)]))) / atts.__len__()
+    # d_cheby = chebyshev(center_sparse, [state[i] for i in atts])
+    return d_mah
 
 
 def coverage(classifier, data, dtypes):
