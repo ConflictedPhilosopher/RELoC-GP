@@ -80,7 +80,10 @@ class Classifier:
             else:
                 update_cond(ref, att_val)
 
-        self.prediction = set(int(n) for n in classifier_info[dtypes.__len__()+1].split(";"))
+        try:
+            self.prediction = set(int(n) for n in classifier_info[dtypes.__len__() + 1].split(";"))
+        except AttributeError:
+            self.prediction.add(classifier_info[dtypes.__len__() + 1])
         label_precisions = classifier_info[dtypes.__len__() + 2]
         self.label_based = {int(kv.split("%")[0]): float(kv.split("%")[1]) for kv in label_precisions.split(";")}
         self.fitness, self.loss, self.numerosity, self.match_count, self.ave_matchset_size, self.init_time, \
