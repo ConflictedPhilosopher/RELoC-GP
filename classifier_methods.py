@@ -78,7 +78,7 @@ class ClassifierMethods:
         classifier_string += str("%.4f" % float(classifier.specified_atts.__len__()/self.dtypes.__len__())) + ","
         prediction_string = ";".join([str(label) for label in classifier.prediction])
         classifier_string += (prediction_string + ",")
-        label_precision = ";".join([str(label) + '%' + str(round(pr, 3)) for label, pr in classifier.label_based.items()])
+        label_precision = ";".join([str(label) + '%' + str(round(pr, 4)) for label, pr in classifier.label_based.items()])
         classifier_string += (label_precision + ",")
         try:
             loss = float(classifier.loss/classifier.match_count)
