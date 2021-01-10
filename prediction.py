@@ -4,7 +4,7 @@
 # snazmi@aggies.ncat.edu.
 #
 # ------------------------------------------------------------------------------
-from numpy import argmax, zeros, sqrt, isnan, all, nan_to_num
+from numpy import argmax, zeros, exp, nan_to_num
 from sklearn.metrics import roc_curve, precision_recall_curve
 
 from config import *
@@ -46,28 +46,22 @@ def max_prediction(matching_cls, randint_func):
 
 def aggregate_prediction(matching_cls):
     predicted_labels = set().union(*[cl.prediction for cl in matching_cls])
-    # vote = dict.fromkeys(predicted_labels, 0.0)
-    # numerosity = dict.fromkeys(predicted_labels, 0)
-    # def update_value(cl):
-    #     if sum(cl.label_based.values()) > 0:
-    #         label_acc = cl.label_based
-    #     else:
-    #         label_acc = {k: cl.fitness for k in cl.prediction}
-    #     for label in cl.prediction:
-    #         vote[label] += label_acc[label]
-    #         numerosity[label] += 1
-    #
-    # [update_value(cl) for cl in matching_cls]
-    # try:
-    #     vote = {k: v / numerosity[k] for k, v in vote.items()}
-    #     # return vote
-    # except (ZeroDivisionError, ValueError):
-    #     pass
+
+    def sigmoid(x):
+        return 1 / (1 + exp(-10 * (x - 0.5)))
 
     vote = dict.fromkeys(predicted_labels, 0.0)
     for l in predicted_labels:
-        votes = [cl.label_based.get(l, 0.0) for cl in matching_cls]
-        vote[l] = max(votes)
+        votes = [cl.label_based.get(l) for cl in matching_cls]
+        votes = [v for v in votes if v]
+        if votes:
+            n_ratio = votes.__len__()/matching_cls.__len__()
+            coef = sigmoid(n_ratio)
+            vote[l] = max(votes) * coef
+        else:
+            vote[l] = 0.0
+    # v_max = max(vote.values())
+    # vote = {k: v/v_max for k, v in vote.items()}
     return vote
 
 
