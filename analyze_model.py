@@ -20,7 +20,7 @@ def analyze(pop, data):
         condition = rule.condition
         att_idx = rule.specified_atts
         for c, i in zip(condition, att_idx):
-            model.iat[row, i] = c
+            model.iat[row, i] =
         model.at[row, 'feature_count'] = att_idx.__len__()
     model['labels'] = [set(classifier.label_based.keys()) for classifier in pop]
     model['parent_labels'] = [classifier.parent_prediction for classifier in pop]
@@ -39,10 +39,10 @@ def analyze(pop, data):
     # Label space analysis
     prediction = pd.DataFrame(index=list(data.label_ref.values()), columns=['sample_ratio', 'rule_ratio', 'avg_precision'])
     prediction.fillna(0, inplace=True)
-    for labelset, num in zip(model['labels'], model['num']):
+    for labelset in model['labels']:
         for l in labelset:
             prediction.at[data.label_ref[l], 'rule_ratio'] += 1
-    for precision, num in zip(model['precisions'], model['num']):
+    for precision in model['precisions']:
         for l in precision.keys():
             prediction.at[data.label_ref[l], 'avg_precision'] += precision[l]
     prediction['avg_precision'] /= prediction['rule_ratio']
