@@ -20,7 +20,7 @@ def analyze(pop, data):
         condition = rule.condition
         att_idx = rule.specified_atts
         for c, i in zip(condition, att_idx):
-            model.iat[row, i] =
+            model.iat[row, i] = c
         model.at[row, 'feature_count'] = att_idx.__len__()
     model['labels'] = [set(classifier.label_based.keys()) for classifier in pop]
     model['parent_labels'] = [classifier.parent_prediction for classifier in pop]
