@@ -34,16 +34,16 @@ def select_features(data_train, data_test):
 
     indices = [argsort(importance)[::-1] for importance in feature_scores]
     selected_per_class = [index[:int(0.1 * NO_FEATURES)].tolist() for index in indices]
-    selected = list(set().union(*selected_per_class))
+    selected_union = list(set().union(*selected_per_class))
 
     avg_feature_scores = mean(feature_scores, axis=0)
     avg_indices = argsort(avg_feature_scores)[::-1]
-    selected = avg_indices[:int(0.1 * NO_FEATURES)]
-    drop_col = [idx for idx in range(NO_FEATURES) if idx not in selected]
+    selected_avg = avg_indices[:int(0.1 * NO_FEATURES)]
+    drop_col = [idx for idx in range(NO_FEATURES) if idx not in selected_union]
 
     train_red = data_train.drop(data_train.columns[drop_col], axis=1)
     test_red = data_test.drop(data_test.columns[drop_col], axis=1)
-    return train_red, test_red, selected.__len__()
+    return train_red, test_red, selected_union.__len__()
 
 
 class Preprocessing:
@@ -81,7 +81,7 @@ class Preprocessing:
         if train_test:
             data_train = self.load_data(train_data_path)
             data_test = self.load_data(test_data_path)
-            data_train, data_test, self.no_features = select_features(data_train, data_test)
+            # data_train, data_test, self.no_features = select_features(data_train, data_test)
             data_complete = pd.concat([data_train, data_test])
 
             self.data_train_list = self.format_data(data_train)
@@ -91,8 +91,8 @@ class Preprocessing:
         elif complete:
             data_complete = self.load_data(data_path)
             data_train, data_test = self.train_test_split(data_complete)
-            data_train, data_test, self.no_features = select_features(data_train, data_test)
-            data_complete = pd.concat([data_train, data_test])
+            # data_train, data_test, self.no_features = select_features(data_train, data_test)
+            # data_complete = pd.concat([data_train, data_test])
             self.data_train_list = self.format_data(data_train)
             self.data_test_list = self.format_data(data_test)
         else:
