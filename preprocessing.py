@@ -16,8 +16,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import ExtraTreesClassifier
 from skmultilearn.problem_transform import BinaryRelevance
+from sklearn.cluster import KMeans
+import numpy as np
 
-from visualization import plot_bar, plot_heatmap
+from visualization import plot_bar, plot_heatmap, plot_graph
 from config import *
 
 
@@ -102,8 +104,8 @@ class Preprocessing:
         self.characterize_labels(data_complete)
         if GET_MLD_PROP:
             self.multilabel_properties(data_complete)
+        # plot_graph({0: list(range(NO_LABELS))}, self.sim_matrix, self.label_ref)
 
-    # load data (.csv)
     def load_data(self, path):
         try:
             drop_index = []
