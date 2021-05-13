@@ -58,29 +58,38 @@ def plot_bar(value_dict, title):
 
 
 def plot_heatmap(sim_matrix, label_ref):
+    # sim_matrix[sim_matrix <= 0.1] = 0
     annotations = list(label_ref.values())
     fig, ax = plt.subplots()
-    ax.imshow(sim_matrix, cmap='hot', interpolation='nearest')
-    ax.set_title('Pair-wise label similarity')
+    im = ax.imshow(sim_matrix, cmap='YlGn', interpolation='nearest')
+    # ax.set_title('Pairwise label similarities', alpha=0.7)
     ax.set_xticks(np.arange(annotations.__len__()))
     ax.set_yticks(np.arange(annotations.__len__()))
-    ax.set_xticklabels(annotations)
-    ax.set_yticklabels(annotations)
+    ax.set_xticklabels(annotations, alpha=0.9, fontsize=16)
+    ax.set_yticklabels(annotations, alpha=0.9, fontsize=16)
 
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
              rotation_mode="anchor")
+    plt.colorbar(im, ax=ax, alpha=1)
+    for edge, spine in ax.spines.items():
+        spine.set_visible(False)
     fig.tight_layout()
     plt.savefig(os.path.join(os.path.curdir, REPORT_PATH, DATA_HEADER, 'heat-map.png'))
     plt.close()
 
 
 def plot_graph(label_clusters, sim_matrix, label_ref):
+    fig, axis = plt.subplots()
+    for edge, spine in axis.spines.items():
+        spine.set_visible(False)
     labels = set()
     for cl in label_clusters.values():
         labels = labels.union(cl)
     labels = sorted(list(labels))
     graph = nx.Graph()
     edge_list = []
+
+    sim_matrix[sim_matrix < 0.1] = 0
 
     def same_cluster(l1, l2):
         for cluster in label_clusters.values():
@@ -97,33 +106,41 @@ def plot_graph(label_clusters, sim_matrix, label_ref):
             else:
                 graph.add_node(labels[c1])
                 graph.add_node(labels[c2])
+    if graph.number_of_nodes() <= 1:
+        return
     try:
         pos = nx.planar_layout(graph)
     except nx.NetworkXException:
         pos = nx.spring_layout(graph)
-    node_color = ['g', 'm', 'c', 'b', 'k', 'y']
+    node_color = ['xkcd:soft green', 'c', 'y' 'g', 'm', 'b', 'k']
     for k in label_clusters.keys():
         nx.draw_networkx_nodes(graph, pos,
                                node_color=node_color[k],
                                nodelist=list(label_clusters[k]),
-                               node_size=200)
+                               node_size=2000)
 
     edge_weights = nx.get_edge_attributes(graph, 'weight')
     edge_weights = {k: round(v, 3) for k, v in edge_weights.items()}
     names = {k: label_ref[k] for k in labels}
-    nx.draw_networkx_labels(graph, pos, names, font_size=8)
-    nx.draw_networkx_edges(graph, pos, edge_list=edge_list, width=1, alpha=0.5)
-    nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_weights, font_size=8)
+    nx.draw_networkx_labels(graph, pos, names, font_size=20, alpha=0.9)
+    nx.draw_networkx_edges(graph, pos, edge_list=edge_list, width=1, alpha=0.7)
+    nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_weights, font_size=16, alpha=0.9)
+    # fig.suptitle('Label similarity graph', fontsize=14)
+    # axis.set_title('Label similarity graph', fontsize=14)
     plt.show()
 
 
 def plot_image(image_id, labels, vote, label_ref):
-    fig1, ax = plt.subplots(2)
-    ax[0].set_title('Test image' + image_id)
-    ax[1].set_title('Label similarity')
+    fig1, axis = plt.subplots()
+    axis.set_title('Test image' + image_id)
+    for edge, spine in axis.spines.items():
+        spine.set_visible(False)
+    axis.get_xaxis().set_visible(False)
+    axis.get_yaxis().set_visible(False)
+    plt.axis('off')
     try:
         pixels = image.imread(os.path.join(DATA_DIR, DATA_HEADER, 'images_dir', image_id + '.png'))
-        ax[0].imshow(pixels)
+        axis.imshow(pixels)
     except FileNotFoundError:
         pass
     print('Ground truth: ', [label_ref[label] for label in labels])
