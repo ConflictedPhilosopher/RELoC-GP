@@ -69,7 +69,7 @@ class REGLoGP:
             analyze(pop, data)
         else:
             self.population = ClassifierSets(attribute_info=data.attribute_info, dtypes=data.dtypes, rand_func=self.rng,
-                                             sim_mode='global', sim_delta=0.0, clustering_method=None,
+                                             sim_mode='global', sim_delta=0.9, clustering_method=None,
                                              cosine_matrix=self.data.sim_matrix, data_cov_inv=self.data.cov_inv)
 
         if THRESHOLD == 1:
@@ -123,8 +123,8 @@ class REGLoGP:
         self.timer.start_evaluation()
         self.population.pop_average_eval(self.data.no_features)
         self.population.estimate_label_pr(samples_training)
-        [test_evaluation, test_class_precision, test_coverage] = self.evaluation(samples_test)
         [train_evaluation, _, train_coverage] = self.evaluation(samples_training)
+        [test_evaluation, test_class_precision, test_coverage] = self.evaluation(samples_test)
         self.timer.stop_evaluation()
 
         reporting = Reporting(self.exp)
@@ -216,9 +216,13 @@ class REGLoGP:
     def demo(self, sample, vote, cosine_sim):
         self.population.build_sim_graph([self.population.popset[idx] for idx in self.population.matchset],
                                         cosine_matrix=cosine_sim)
-        cluster_dict = {0: self.population.predicted_labels}
-        plot_image(sample[2], sample[1], vote, self.data.label_ref)
-        plot_graph(cluster_dict, self.population.label_similarity, self.data.label_ref)
+        labels = []
+        for l in sorted(vote, key=vote.get, reverse=True):
+            labels.append(l)
+        cluster_dict = {0: labels[:5]}
+        if len(sample[1]) > 1:
+            plot_image(sample[2], sample[1], vote, self.data.label_ref)
+            plot_graph(cluster_dict, self.data.sim_matrix, self.data.label_ref)
 
         # for idx in self.population.matchset:
         #     if self.population.popset[idx].match_count > 0:
