@@ -47,4 +47,4 @@ DO_SUBSUMPTION = False
 SELECTION = 't'   # 'r': roulette wheel selection - 't': tournament selection
 P_XOVER = 0.8
 P_MUT = 0.01
-THETA_GA = 10000
+THETA_GA = 15
